@@ -90,33 +90,23 @@ common.chart = (function() {
             }
             if(prev_datum) {
                 if(d.total_state && moment(end_date).add(1,'day') >= new Date(d.unixtime)) {
-                    if(prev_datum.current_state === '하락' && d.current_state === '상승' && d.total_state === '상승'
-                    && parseInt(props["최근갯수"]) < 2 && d.support_count > d.regist_count) {
-                        var prev_props = JSON.parse(prev_datum.props);
-                        if(prev_signal) {
-                            if(parseFloat(props["A패턴_비율"]) <= parseFloat(prev_signal["A패턴_비율"])) {
-                                trades.push({date:parseDate(d.unixtime), type:'buy', price:d.Low, quantity:1})
-                            }
-                        }
-                        prev_signal = props;
+                    if(prev_datum.current_state === '하락' && d.current_state === '상승' && parseInt(props["최근갯수"]) < 2) {
                         console.log(moment(d.unixtime).format("YYYY-MM-DD"));
-                        console.log(parseFloat(props["A패턴_비율"]), parseFloat(prev_props["A패턴_비율"]))
-                        console.log(JSON.parse(d.props));
-                        //console.log(parseFloat(prev_props["A패턴_비율"]));
-                        // var resistCount = 0;
-                        // var supportCount = 0;
-                        // _.each(props, function(v, k) {
-                        //     if(k.includes("support")) {
-                        //         supportCount++;
-                        //     } else if(k.includes("resistance")) {
-                        //         resistCount++;
-                        //     }
-                        // })
-                        // if(supportCount >= resistCount) {
-                        //     trades.push({date:parseDate(d.unixtime), type:'buy', price:d.Low, quantity:1})
-                        // }
+                        
+                        var resistCount = 0;
+                        var supportCount = 0;
+                        _.each(props, function(v, k) {
+                            if(k.includes("support")) {
+                                supportCount++;
+                            } else if(k.includes("resistance")) {
+                                resistCount++;
+                            }
+                        })
+                        if(supportCount >= resistCount) {
+                            trades.push({date:parseDate(d.unixtime), type:'buy', price:d.Low, quantity:1})
+                            console.log(props);
+                        }
                     }
-
 
                     // if(prev_datum.current_state === '하락' && d.current_state === '상승'
                     //     && prev_datum.support_count <= d.support_count && prev_datum.regist_count > d.regist_count && parseInt(props["최근갯수"]) < 3) {

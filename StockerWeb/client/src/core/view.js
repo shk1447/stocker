@@ -571,7 +571,7 @@ common.view = (function() {
                             resistCount++;
                         }
                     })
-                    if(supportCount > resistCount) {
+                    if(supportCount >= resistCount) {
                         if(!activeNodes.find(function(d) { return d.id === item.id})) {
                             activeNodes.push(item);
                         }
