@@ -1,0 +1,17 @@
+#ignore thumbnails created by windows
+Thumbs.db
+#Ignore files build by Visual Studio
+*.user
+*.pch
+*.ncb
+*.suo
+*.bak
+*.cache
+*.ilk
+*.log
+[Bb]in*/
+[Dd]ebug*/
+*.sbr
+obj*/
+[Rr]elease*/
+node_modules*/
