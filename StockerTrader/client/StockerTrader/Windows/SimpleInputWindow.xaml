@@ -1,0 +1,20 @@
+﻿<Window x:Class="ScalKing.Windows.SimpleInputWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+        xmlns:local="clr-namespace:ScalKing.Windows"
+        mc:Ignorable="d" WindowStartupLocation="CenterScreen" Background="#FF9ADFFF"
+        WindowStyle="None" ResizeMode="NoResize" 
+        Title="SimpleInputWindow" Height="50" Width="300">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition Width="80"/>
+        </Grid.ColumnDefinitions>
+        
+        <TextBox x:Name="searchTextBox" Margin="10" />
+        <Button x:Name="addButton" Click="addButton_Click" Margin="10" Grid.Column="1" VerticalAlignment="Center" Content="ADD" />
+    </Grid>
+</Window>

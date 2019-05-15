@@ -1,0 +1,96 @@
+﻿<UserControl x:Class="ScalKing.Controls.KHControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+             xmlns:control="clr-namespace:ScalKing.Controls"
+             xmlns:converter="clr-namespace:Common.Converter;assembly=Common"
+             xmlns:kh="clr-namespace:AxKHOpenAPILib;assembly=AxInterop.KHOpenAPILib"
+             mc:Ignorable="d" Background="White"
+             d:DesignHeight="50" d:DesignWidth="1300">
+    <UserControl.Resources>
+        <converter:NegativeColorConverter x:Key="valueToColor"/>
+    </UserControl.Resources>
+
+    <Grid x:Name="grid" Background="Beige">        
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition />
+            <ColumnDefinition Width="auto"/>
+            <ColumnDefinition Width="0"/>
+            <ColumnDefinition Width="110"/>
+        </Grid.ColumnDefinitions>
+
+        <WindowsFormsHost Visibility="Collapsed">
+            <WindowsFormsHost.Child>
+                <kh:AxKHOpenAPI x:Name="khAPI"/>
+            </WindowsFormsHost.Child>
+        </WindowsFormsHost>
+
+        <StackPanel Margin="5 0 0 0" Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" ScrollViewer.HorizontalScrollBarVisibility="Auto">
+            <TextBlock Text="Accounts : " VerticalAlignment="Center"/>
+            <ListBox Margin="0 0 5 0" Width="150" Height="44" ItemsSource="{Binding UserInfo.Accounts}" SelectedItem="{Binding SelectedAccount}"/>
+
+            <Button Content="Refresh" Width="55" Height="30" Margin="3" Command="{Binding AccountRefresh}"/>
+            <Button Content="Stop RealTime" Width="85" Height="30" Margin="3" Command="{Binding StopRealTime}"/>
+
+            <StackPanel Margin="10 0 0 0" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" >
+                    <TextBlock Text="총매입금액: "/>
+                    <TextBlock Text="{Binding AccountInfo.총매입금액}"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" >
+                    <TextBlock Text="유가잔고평가액: "/>
+                    <TextBlock Text="{Binding AccountInfo.유가잔고평가액}"/>
+                </StackPanel>
+            </StackPanel>
+
+            <StackPanel Margin="10 0 0 0" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" >
+                    <TextBlock Text="예탁자산평가액: "/>
+                    <TextBlock Text="{Binding AccountInfo.예탁자산평가액}"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" >
+                    <TextBlock Text="누적손익율: "/>
+                    <TextBlock Text="{Binding AccountInfo.누적손익율}"/>
+                </StackPanel>
+            </StackPanel>
+            <StackPanel Margin="10 0 0 0" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" >
+                    <TextBlock Text="예수금: "/>
+                    <TextBlock Text="{Binding AccountInfo.예수금}"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" >
+                    <TextBlock Text="누적투자원금: "/>
+                    <TextBlock Text="{Binding AccountInfo.누적투자원금}"/>
+                </StackPanel>
+            </StackPanel>
+
+        </StackPanel>
+
+        <StackPanel Margin="10 0 10 0" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="auto"/>
+                    <ColumnDefinition Width="50"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Row="0" Text="Name: "/>
+                <TextBlock Grid.Row="0" Grid.Column="1" Width="50" Text="{Binding UserInfo.Name}"/>
+
+                <TextBlock Grid.Row="1" Text="Connected: "/>
+                <TextBlock Grid.Row="1" Grid.Column="1" Width="40" Text="{Binding IsConnected}"/>
+            </Grid>
+
+            <CheckBox Content="모의투자" IsChecked="{Binding UserInfo.IsMockInvestment}" IsEnabled="False"/>
+        </StackPanel>
+
+        <Button Margin="5" Grid.Column="3" Width="100" Height="30" Content="Login" Command="{Binding LoginCommand}"/>
+
+
+    </Grid>
+</UserControl>
