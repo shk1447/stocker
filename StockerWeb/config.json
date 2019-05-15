@@ -1,0 +1,23 @@
+{
+    "https":false,
+    "project": {
+      "name":"default",
+      "path":""
+    },
+    "port": 5772,
+    "tcp_port":2000,
+    "session_time":120,
+    "external":{
+        "wsUrl" : "ws://localhost:1448/diservice",
+        "httpUrl" : "http://localhost:1447"
+    },
+    "database": {
+      "type": "mysql",
+      "mysql": {
+        "host": "localhost",
+        "user": "root",
+        "password": "stocker515",
+        "database": "stocker"
+      }
+    }
+  }
