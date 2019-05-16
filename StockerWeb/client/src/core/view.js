@@ -559,28 +559,14 @@ common.view = (function() {
                         item.supstance = [];
                     }
 
-                    item["status"] = item.supstance.length - item.prev_supstance.length;
+                    item["status"] = 0;
 
-                    var props = JSON.parse(item.props);
-                    var resistCount = 0;
-                    var supportCount = 0;
-                    _.each(props, function(v, k) {
-                        if(k.includes("support")) {
-                            supportCount++;
-                        } else if(k.includes("resistance")) {
-                            resistCount++;
-                        }
+                    activeNodes.push(item);
+                    activeLinks.push({
+                        source:root.id,
+                        target:item.id,
+                        volume_percent:item.volume_percent
                     })
-                    if(supportCount >= resistCount) {
-                        if(!activeNodes.find(function(d) { return d.id === item.id})) {
-                            activeNodes.push(item);
-                        }
-                        activeLinks.push({
-                            source:root.id,
-                            target:item.id,
-                            volume_percent:item.volume_percent
-                        })
-                    }
                 })
                 redraw();
             } else {
