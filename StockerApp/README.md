@@ -5,11 +5,12 @@
 ## Description
 
 * App 개발 (예정)
-** kotlin
-** Push 기능 (가격대 알림 등)
-** 관심 종목 리스트업 등
+  - kotlin
+  - Push 기능 (가격대 알림 등)
+  - 관심 종목 리스트업 등
+
 * Push 서버 개발 (예정)
-** golang or c++
+  - golang or c++
 
 ## Quick Start
 
