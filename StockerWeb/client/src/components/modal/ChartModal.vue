@@ -211,12 +211,6 @@ export default {
         stroke-dasharray: 2, 2;
     }
 
-    .scope-supstance.result path {
-        stroke: blue;
-        stroke-width: 2;
-        stroke-dasharray: 3, 3;
-    }
-
     .scope-supstance.loss path {
         stroke: darkred;
         stroke-width: 2.5;
