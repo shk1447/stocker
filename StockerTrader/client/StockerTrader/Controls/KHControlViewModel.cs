@@ -194,7 +194,17 @@ namespace ScalKing.Controls
         {
             Log.Info("[로그인 처리결과] " + Error.GetErrorMessage(e.nErrCode));
 
+            if (e.nErrCode == 0)
+            {
+                this.ShowAccountWindow();
+            }
+
             this.IsConnected = e.nErrCode == 0 ? true : false;
+        }
+
+        private void ShowAccountWindow()
+        {
+            this.khAPI.KOA_Functions("ShowAccountWindow", "");
         }
 
         private void KhAPI_OnReceiveChejanData(object sender, _DKHOpenAPIEvents_OnReceiveChejanDataEvent e)
