@@ -1,5 +1,4 @@
-﻿using MongoDB.Bson;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,7 +8,6 @@ namespace Interface
 {
     public class ConditionAnalysisLogOnMongo : ConditionAnalysisLog
     {
-        public ObjectId _id;
     }
 
     public class ConditionAnalysisLog
