@@ -304,9 +304,9 @@ namespace Finance
                     }
                     if (result.rawdata.Count > 0)
                     {
+                        result.rawdata = StockAnalysis.Instance.AllAnalysis(result);
                         ThreadPool.QueueUserWorkItem((a) =>
                         {
-                            result.rawdata = StockAnalysis.Instance.AllAnalysis(result);
                             var setSourceQuery = MariaQueryBuilder.SetDataSource(result);
                             MariaDBConnector.Instance.SetQuery("DynamicQueryExecuter", setSourceQuery);
                         });
