@@ -68,10 +68,10 @@ common.chart = (function() {
 
         supstanceData = [];
         if(supstance) {
-            console.log(supstance);
-            _.each(supstance, function(v,i) {
-                supstanceData.push({value:parseInt(v), type:'test'});
-            })
+            // console.log(supstance);
+            // _.each(supstance, function(v,i) {
+            //     supstanceData.push({value:parseInt(v), type:'test'});
+            // })
         }
         trades = [];
         var prev_datum;
@@ -86,75 +86,48 @@ common.chart = (function() {
         var end_date = end_date ? new Date(end_date) : new Date();
         data = data.map(function(d) {
             d.props = JSON.parse(d.props);
-            if(moment(d.unixtime).format("YYYY-MM-DD") === moment(end_date).format("YYYY-MM-DD")) {
-                _.each(d.props, function(v, k) {
-                    if(k.includes("support")) {
-                        supstanceData.push({value:Math.floor(parseFloat(v) / 10) * 10, type:'support'})
-                    } else if(k.includes("resistance")) {
-                        supstanceData.push({value:Math.floor(parseFloat(v) / 10) * 10, type:'regist'})
-                    }
-                })
-            }
             if(prev_datum) {
                 if(d.total_state && moment(end_date).add(1,'day') >= new Date(d.unixtime)) {
-                    if(prev_datum.current_state === '하락' && d.current_state === '상승' && parseInt(d.props["최근갯수"]) < 3) {
-                        if(sell_signal) {
-                            if(d.Close > sell_signal.High) {
-                                //console.log(moment(d.unixtime).format("YYYY-MM-DD"));
-                                //trades.push({date:parseDate(d.unixtime), type:'buy', price:d.Low, quantity:1})
-                                // buy_money += d.Low * d.Volume;
-                                // buy_volume += d.Volume;
-                            }
-                        }
-
+                    if(prev_datum.current_state === '하락' && d.current_state === '상승' && parseInt(d.props["최근갯수"]) < 2) {
                         if(buy_signal) {
-                            var supportCount = 0;
-                            var resistCount = 0;
-                            _.each(d.props, function(v, k) {
-                                if(k.includes("support")) {
-                                    supportCount++;
-                                } else if(k.includes("resistance")) {
-                                    resistCount++;
-                                }
-                            })
-                            
-                            _.each(buy_signal.props, function(v, k) {
-                                if(k.includes("support")) {
-                                    supportCount--;
-                                } else if(k.includes("resistance")) {
-                                    resistCount--;
-                                }
-                            })
                             if(buy_signal.support_count > d.support_count) {
                                 trades.push({date:parseDate(d.unixtime), type:'buy', price:d.Low, quantity:1})
-                                // buy_money += (prev_datum.Low + d.High) / 2 * (d.Volume + prev_datum.Volume);
-                                // buy_volume += d.Volume + prev_datum.Volume;
-                                console.log(moment(d.unixtime).format("YYYY-MM-DD"));
-                                console.log(d.total_state, buy_signal.regist_count - d.regist_count);
                             }
                         }
                         buy_signal = d;
                     }
                     if(prev_datum.current_state === '상승' && d.current_state === '하락' && parseInt(d.props["최근갯수"]) < 3) {
-                        if(buy_signal) {
-                            if(d.Close < buy_signal.Low) {
-                                // trades.push({date:parseDate(d.unixtime), type:'sell', price:d.High, quantity:1});
-                                // sell_money += d.High * d.Volume;
-                                // sell_volume += d.Volume;
-                            }
-                        }
-
                         if(sell_signal) {
                             if(sell_signal.regist_count > d.regist_count) {
                                 trades.push({date:parseDate(d.unixtime), type:'sell', price:d.High, quantity:1});
-                                sell_money += (prev_datum.Low + d.High) / 2 * (d.Volume + prev_datum.Volume);
-                                sell_volume += d.Volume + prev_datum.Volume;
                             }
                         }
-                        
                         sell_signal = d;
                     }
                 }
+            }
+            if(moment(d.unixtime).format("YYYY-MM-DD") === moment(end_date).format("YYYY-MM-DD")) {
+                var last_support = 0;
+                var last_resist = 0;
+                _.each(buy_signal.props, function(v, k) {
+                    if(k.includes("support")) {
+                        last_support = parseFloat(v)
+                    } else if(k.includes("resistance")) {
+                        last_resist = parseFloat(v);
+                    }
+                })
+                supstanceData.push({value:Math.floor(last_support / 10) * 10, type:'support'})
+                supstanceData.push({value:Math.floor(last_resist / 10) * 10, type:'regist'})
+                _.each(sell_signal.props, function(v, k) {
+                    if(k.includes("support")) {
+                        last_support = parseFloat(v)
+                    } else if(k.includes("resistance")) {
+                        last_resist = parseFloat(v);
+                    }
+                })
+                supstanceData.push({value:Math.floor(last_support / 10) * 10, type:'loss'})
+                supstanceData.push({value:Math.floor(last_resist / 10) * 10, type:'high'})
+                console.log(buy_signal, sell_signal);
             }
             prev_datum = d;
             
