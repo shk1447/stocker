@@ -47,15 +47,32 @@ export default {
                     var nodes = common.view.getNodes();
                     var count = 0;
                     var alarm_items = {};
+                    function isRange(x, min, max) {
+                        return ((x-min) * (x-max) <= 0);
+                    }
                     _.each(nodes, function(d,i) {
                         if(!d.type) {
                             count++;
                             api.getData(d.id, moment().add(1, 'day').format("YYYY-MM-DD")).then(function(data) {
                                 var analysis_data = common.chart.analysis(data, d.unixtime, d.supstance);
+
+                                // var min_buy = analysis_data.buy_support >= analysis_data.buy_resist ? analysis_data.buy_resist : analysis_data.buy_support;
+                                // var max_buy = analysis_data.buy_support <= analysis_data.buy_resist ? analysis_data.buy_resist : analysis_data.buy_support;
+                                // var min_sell = analysis_data.sell_support >= analysis_data.sell_resist ? analysis_data.sell_resist : analysis_data.sell_support;
+                                // var max_sell = analysis_data.sell_support <= analysis_data.sell_resist ? analysis_data.sell_resist : analysis_data.sell_support;
                                 
-                                if(analysis_data) {
+                                // if(isRange(min_sell, min_buy, max_buy) || isRange(max_sell, min_buy, max_buy)) {
+                                //     alarm_items[d.id] = 1.2;
+                                // }
+                                
+                                // if(analysis_data.sell_resist >= analysis_data.sell_support && d.price > analysis_data.sell_support) {
+                                //     alarm_items[d.id] = 1.2;
+                                // }
+
+                                if(analysis_data.result) {
                                     alarm_items[d.id] = 1.2;
                                 }
+
                                 count--;
                                 if(count === 0) {
                                     common.view.setAlarm(alarm_items);

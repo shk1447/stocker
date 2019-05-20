@@ -86,37 +86,18 @@ common.chart = (function() {
         var end_date = end_date ? new Date(end_date) : new Date();
         data = data.map(function(d) {
             d.props = JSON.parse(d.props);
-            if(prev_datum) {
-                if(d.total_state && moment(end_date).add(1,'day') >= new Date(d.unixtime)) {
-                    if(prev_datum.current_state === '하락' && d.current_state === '상승' && parseInt(d.props["최근갯수"]) < 2) {
-                        if(buy_signal) {
-                            if(buy_signal.support_count > d.support_count) {
-                                trades.push({date:parseDate(d.unixtime), type:'buy', price:d.Low, quantity:1})
-                            }
-                        }
-                        buy_signal = d;
-                    }
-                    if(prev_datum.current_state === '상승' && d.current_state === '하락' && parseInt(d.props["최근갯수"]) < 3) {
-                        if(sell_signal) {
-                            if(sell_signal.regist_count > d.regist_count) {
-                                trades.push({date:parseDate(d.unixtime), type:'sell', price:d.High, quantity:1});
-                            }
-                        }
-                        sell_signal = d;
-                    }
-                }
-            }
+
             if(moment(d.unixtime).format("YYYY-MM-DD") === moment(end_date).format("YYYY-MM-DD")) {
                 var last_support = 0;
                 var last_resist = 0;
-                _.each(buy_signal.props, function(v, k) {
+                _.each(d.props, function(v, k) {
                     if(k.includes("support")) {
                         last_support = parseFloat(v)
                     } else if(k.includes("resistance")) {
                         last_resist = parseFloat(v);
                     }
                 })
-                supstanceData.push({value:Math.floor(last_support / 10) * 10, type:'support'})
+                // supstanceData.push({value:Math.floor(last_support / 10) * 10, type:'support'})
                 supstanceData.push({value:Math.floor(last_resist / 10) * 10, type:'regist'})
                 _.each(sell_signal.props, function(v, k) {
                     if(k.includes("support")) {
@@ -125,9 +106,21 @@ common.chart = (function() {
                         last_resist = parseFloat(v);
                     }
                 })
-                supstanceData.push({value:Math.floor(last_support / 10) * 10, type:'loss'})
+                // supstanceData.push({value:Math.floor(last_support / 10) * 10, type:'loss'})
                 supstanceData.push({value:Math.floor(last_resist / 10) * 10, type:'high'})
-                console.log(buy_signal, sell_signal);
+            }
+
+            if(prev_datum) {
+                if(d.total_state && moment(end_date).add(1,'day') >= new Date(d.unixtime)) {
+                    if(prev_datum.current_state === '하락' && d.current_state === '상승' && parseInt(d.props["최근갯수"]) < 2) {
+                        trades.push({date:parseDate(d.unixtime), type:'buy', price:d.Low, quantity:1})
+                        buy_signal = d;
+                    }
+                    if(prev_datum.current_state === '상승' && d.current_state === '하락' && parseInt(d.props["최근갯수"]) < 2) {
+                        trades.push({date:parseDate(d.unixtime), type:'sell', price:d.High, quantity:1});
+                        sell_signal = d;
+                    }
+                }
             }
             prev_datum = d;
             
@@ -185,42 +178,63 @@ common.chart = (function() {
     }
 
     function analysis(data, end_date, supstance) {
-        var ret_data = false;
+        var ret_data = {};
         var end_date = end_date ? new Date(end_date) : new Date();
         var parseDate = d3.timeParse("%Y-%m-%dT%H:%M:%S.%LZ");
 
         var prev_datum;
         var buy_signal;
+        var sell_signal;
+        function isRange(x, min, max) {
+            return ((x-min) * (x-max) <= 0);
+        }
         data = data.filter(function(d) {return new Date(d.unixtime) <= end_date}).map(function(d) {
             d.props = JSON.parse(d.props);
+
+            if(moment(d.unixtime).format("YYYY-MM-DD") === moment(end_date).format("YYYY-MM-DD")) {
+                var last_support = 0;
+                var last_resist = 0;
+                _.each(d.props, function(v, k) {
+                    if(k.includes("support")) {
+                        last_support = parseFloat(v)
+                    } else if(k.includes("resistance")) {
+                        last_resist = parseFloat(v);
+                    }
+                })
+                //ret_data.buy_support = Math.floor(last_support / 10) * 10;
+                ret_data.buy_resist = Math.floor(last_resist / 10) * 10;
+                _.each(sell_signal.props, function(v, k) {
+                    if(k.includes("support")) {
+                        last_support = parseFloat(v)
+                    } else if(k.includes("resistance")) {
+                        last_resist = parseFloat(v);
+                    }
+                })
+                //ret_data.sell_support = Math.floor(last_support / 10) * 10;
+                ret_data.sell_resist = Math.floor(last_resist / 10) * 10;
+
+                ret_data.buy_resist = Math.floor(last_resist / 10) * 10;
+                _.each(buy_signal.props, function(v, k) {
+                    if(k.includes("support")) {
+                        last_support = parseFloat(v)
+                    } else if(k.includes("resistance")) {
+                        last_resist = parseFloat(v);
+                    }
+                })
+                if(ret_data.buy_resist > last_resist) {
+                    ret_data["result"] = true;
+                } else {
+                    ret_data["result"] = false;
+                }
+            }
+
             if(prev_datum) {
                 if(d.total_state && moment(end_date).add(1,'day') >= new Date(d.unixtime)) {
-                    if(prev_datum.current_state === '하락' && d.current_state === '상승' && parseInt(d.props["최근갯수"]) < 3) {
-                        if(buy_signal) {
-                            var supportCount = 0;
-                            var resistCount = 0;
-                            _.each(d.props, function(v, k) {
-                                if(k.includes("support")) {
-                                    supportCount++;
-                                } else if(k.includes("resistance")) {
-                                    resistCount++;
-                                }
-                            })
-                            
-                            _.each(buy_signal.props, function(v, k) {
-                                if(k.includes("support")) {
-                                    supportCount--;
-                                } else if(k.includes("resistance")) {
-                                    resistCount--;
-                                }
-                            })
-                            if(buy_signal.support_count > d.support_count) {
-                                if(moment(d.unixtime).format("YYYY-MM-DD") === moment(end_date).format("YYYY-MM-DD")) {
-                                    ret_data = true;
-                                }
-                            }
-                        }
+                    if(prev_datum.current_state === '하락' && d.current_state === '상승' && parseInt(d.props["최근갯수"]) < 2) {
                         buy_signal = d;
+                    }
+                    if(prev_datum.current_state === '상승' && d.current_state === '하락' && parseInt(d.props["최근갯수"]) < 2) {
+                        sell_signal = d;
                     }
                 }
             }
