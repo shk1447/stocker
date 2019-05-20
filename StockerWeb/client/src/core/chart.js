@@ -203,6 +203,7 @@ common.chart = (function() {
                 })
                 //ret_data.buy_support = Math.floor(last_support / 10) * 10;
                 ret_data.buy_resist = Math.floor(last_resist / 10) * 10;
+                
                 _.each(sell_signal.props, function(v, k) {
                     if(k.includes("support")) {
                         last_support = parseFloat(v)
@@ -213,7 +214,6 @@ common.chart = (function() {
                 //ret_data.sell_support = Math.floor(last_support / 10) * 10;
                 ret_data.sell_resist = Math.floor(last_resist / 10) * 10;
 
-                ret_data.buy_resist = Math.floor(last_resist / 10) * 10;
                 _.each(buy_signal.props, function(v, k) {
                     if(k.includes("support")) {
                         last_support = parseFloat(v)
@@ -221,7 +221,7 @@ common.chart = (function() {
                         last_resist = parseFloat(v);
                     }
                 })
-                if(ret_data.buy_resist > last_resist) {
+                if(ret_data.buy_resist > last_resist && ret_data.buy_resist < d.Close) {
                     ret_data["result"] = true;
                 } else {
                     ret_data["result"] = false;
