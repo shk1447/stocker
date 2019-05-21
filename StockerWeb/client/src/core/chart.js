@@ -219,7 +219,7 @@ common.chart = (function() {
                             last_resist = parseFloat(v);
                         }
                     })
-                    ret_data.prev_sell_support = Math.floor(last_support / 10) * 10;
+                    // ret_data.prev_sell_support = Math.floor(last_support / 10) * 10;
                     ret_data.prev_sell_resist = Math.floor(last_resist / 10) * 10;
                     
                     _.each(sell_signal.props, function(v, k) {
@@ -229,10 +229,20 @@ common.chart = (function() {
                             last_resist = parseFloat(v);
                         }
                     })
-                    ret_data.sell_support = Math.floor(last_support / 10) * 10;
+                    // ret_data.sell_support = Math.floor(last_support / 10) * 10;
                     ret_data.sell_resist = Math.floor(last_resist / 10) * 10;
 
-                    if(ret_data.prev_sell_resist > ret_data.sell_resist) {
+                    _.each(d.props, function(v, k) {
+                        if(k.includes("support")) {
+                            last_support = parseFloat(v)
+                        } else if(k.includes("resistance")) {
+                            last_resist = parseFloat(v);
+                        }
+                    })
+                    ret_data.curr_resist = Math.floor(last_resist / 10) * 10;
+
+                    if(ret_data.prev_sell_resist > ret_data.sell_resist && ret_data.sell_resist >= ret_data.curr_resist
+                        && last_support >= ret_data.curr_resist) {
                         ret_data["result"] = true;
                     }
                 }
