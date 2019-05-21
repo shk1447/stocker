@@ -76,7 +76,9 @@ common.chart = (function() {
         trades = [];
         var prev_datum;
         var buy_signal;
+        var prev_buy_signal;
         var sell_signal;
+        var prev_sell_signal;
 
         var buy_money = 0;
         var buy_volume = 0;
@@ -97,7 +99,7 @@ common.chart = (function() {
                         last_resist = parseFloat(v);
                     }
                 })
-                // supstanceData.push({value:Math.floor(last_support / 10) * 10, type:'support'})
+                //supstanceData.push({value:Math.floor(last_support / 10) * 10, type:'support'})
                 supstanceData.push({value:Math.floor(last_resist / 10) * 10, type:'regist'})
                 _.each(sell_signal.props, function(v, k) {
                     if(k.includes("support")) {
@@ -108,15 +110,27 @@ common.chart = (function() {
                 })
                 // supstanceData.push({value:Math.floor(last_support / 10) * 10, type:'loss'})
                 supstanceData.push({value:Math.floor(last_resist / 10) * 10, type:'high'})
+
+                // _.each(prev_sell_signal.props, function(v, k) {
+                //     if(k.includes("support")) {
+                //         last_support = parseFloat(v)
+                //     } else if(k.includes("resistance")) {
+                //         last_resist = parseFloat(v);
+                //     }
+                // })
+                // supstanceData.push({value:Math.floor(last_support / 10) * 10, type:'loss'})
+                //supstanceData.push({value:Math.floor(last_resist / 10) * 10, type:'loss'})
             }
 
             if(prev_datum) {
                 if(d.total_state && moment(end_date).add(1,'day') >= new Date(d.unixtime)) {
                     if(prev_datum.current_state === '하락' && d.current_state === '상승' && parseInt(d.props["최근갯수"]) < 2) {
+                        prev_buy_signal = buy_signal;
                         trades.push({date:parseDate(d.unixtime), type:'buy', price:d.Low, quantity:1})
                         buy_signal = d;
                     }
                     if(prev_datum.current_state === '상승' && d.current_state === '하락' && parseInt(d.props["최근갯수"]) < 2) {
+                        prev_sell_signal = sell_signal;
                         trades.push({date:parseDate(d.unixtime), type:'sell', price:d.High, quantity:1});
                         sell_signal = d;
                     }
@@ -184,7 +198,9 @@ common.chart = (function() {
 
         var prev_datum;
         var buy_signal;
+        var prev_buy_signal;
         var sell_signal;
+        var prev_sell_signal;
         function isRange(x, min, max) {
             return ((x-min) * (x-max) <= 0);
         }
@@ -192,48 +208,44 @@ common.chart = (function() {
             d.props = JSON.parse(d.props);
 
             if(moment(d.unixtime).format("YYYY-MM-DD") === moment(end_date).format("YYYY-MM-DD")) {
-                var last_support = 0;
-                var last_resist = 0;
-                _.each(d.props, function(v, k) {
-                    if(k.includes("support")) {
-                        last_support = parseFloat(v)
-                    } else if(k.includes("resistance")) {
-                        last_resist = parseFloat(v);
-                    }
-                })
-                //ret_data.buy_support = Math.floor(last_support / 10) * 10;
-                ret_data.buy_resist = Math.floor(last_resist / 10) * 10;
-                
-                _.each(sell_signal.props, function(v, k) {
-                    if(k.includes("support")) {
-                        last_support = parseFloat(v)
-                    } else if(k.includes("resistance")) {
-                        last_resist = parseFloat(v);
-                    }
-                })
-                //ret_data.sell_support = Math.floor(last_support / 10) * 10;
-                ret_data.sell_resist = Math.floor(last_resist / 10) * 10;
+                ret_data["result"] = false;
+                if(prev_sell_signal) {
+                    var last_support = 0;
+                    var last_resist = 0;
+                    _.each(prev_sell_signal.props, function(v, k) {
+                        if(k.includes("support")) {
+                            last_support = parseFloat(v)
+                        } else if(k.includes("resistance")) {
+                            last_resist = parseFloat(v);
+                        }
+                    })
+                    ret_data.prev_sell_support = Math.floor(last_support / 10) * 10;
+                    ret_data.prev_sell_resist = Math.floor(last_resist / 10) * 10;
+                    
+                    _.each(sell_signal.props, function(v, k) {
+                        if(k.includes("support")) {
+                            last_support = parseFloat(v)
+                        } else if(k.includes("resistance")) {
+                            last_resist = parseFloat(v);
+                        }
+                    })
+                    ret_data.sell_support = Math.floor(last_support / 10) * 10;
+                    ret_data.sell_resist = Math.floor(last_resist / 10) * 10;
 
-                _.each(buy_signal.props, function(v, k) {
-                    if(k.includes("support")) {
-                        last_support = parseFloat(v)
-                    } else if(k.includes("resistance")) {
-                        last_resist = parseFloat(v);
+                    if(ret_data.prev_sell_resist > ret_data.sell_resist) {
+                        ret_data["result"] = true;
                     }
-                })
-                if(ret_data.buy_resist > last_resist && ret_data.buy_resist < d.Close) {
-                    ret_data["result"] = true;
-                } else {
-                    ret_data["result"] = false;
                 }
             }
 
             if(prev_datum) {
                 if(d.total_state && moment(end_date).add(1,'day') >= new Date(d.unixtime)) {
                     if(prev_datum.current_state === '하락' && d.current_state === '상승' && parseInt(d.props["최근갯수"]) < 2) {
+                        prev_buy_signal = buy_signal;
                         buy_signal = d;
                     }
                     if(prev_datum.current_state === '상승' && d.current_state === '하락' && parseInt(d.props["최근갯수"]) < 2) {
+                        prev_sell_signal = sell_signal;
                         sell_signal = d;
                     }
                 }
