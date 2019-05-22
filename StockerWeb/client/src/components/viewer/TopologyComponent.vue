@@ -112,6 +112,7 @@ export default {
                 }
             };
             common.socket.emit('fromclient', param);
+            common.events.emit('changeDate', {date:this.collection_date});
         },
         autoAnalysis() {
             this.collection_date = moment(this.collection_date).add(1, 'day');

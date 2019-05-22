@@ -111,15 +111,15 @@ common.chart = (function() {
                 // supstanceData.push({value:Math.floor(last_support / 10) * 10, type:'loss'})
                 supstanceData.push({value:Math.floor(last_resist / 10) * 10, type:'high'})
 
-                // _.each(prev_sell_signal.props, function(v, k) {
-                //     if(k.includes("support")) {
-                //         last_support = parseFloat(v)
-                //     } else if(k.includes("resistance")) {
-                //         last_resist = parseFloat(v);
-                //     }
-                // })
+                _.each(prev_sell_signal.props, function(v, k) {
+                    if(k.includes("support")) {
+                        last_support = parseFloat(v)
+                    } else if(k.includes("resistance")) {
+                        last_resist = parseFloat(v);
+                    }
+                })
                 // supstanceData.push({value:Math.floor(last_support / 10) * 10, type:'loss'})
-                //supstanceData.push({value:Math.floor(last_resist / 10) * 10, type:'loss'})
+                supstanceData.push({value:Math.floor(last_resist / 10) * 10, type:'loss'})
             }
 
             if(prev_datum) {
@@ -204,52 +204,13 @@ common.chart = (function() {
         function isRange(x, min, max) {
             return ((x-min) * (x-max) <= 0);
         }
-        data = data.filter(function(d) {return new Date(d.unixtime) <= end_date}).map(function(d) {
+        data = data.map(function(d) {
             d.props = JSON.parse(d.props);
-
-            if(moment(d.unixtime).format("YYYY-MM-DD") === moment(end_date).format("YYYY-MM-DD")) {
-                ret_data["result"] = false;
-                if(prev_sell_signal) {
-                    var last_support = 0;
-                    var last_resist = 0;
-                    _.each(prev_sell_signal.props, function(v, k) {
-                        if(k.includes("support")) {
-                            last_support = parseFloat(v)
-                        } else if(k.includes("resistance")) {
-                            last_resist = parseFloat(v);
-                        }
-                    })
-                    // ret_data.prev_sell_support = Math.floor(last_support / 10) * 10;
-                    ret_data.prev_sell_resist = Math.floor(last_resist / 10) * 10;
-                    
-                    _.each(sell_signal.props, function(v, k) {
-                        if(k.includes("support")) {
-                            last_support = parseFloat(v)
-                        } else if(k.includes("resistance")) {
-                            last_resist = parseFloat(v);
-                        }
-                    })
-                    // ret_data.sell_support = Math.floor(last_support / 10) * 10;
-                    ret_data.sell_resist = Math.floor(last_resist / 10) * 10;
-
-                    _.each(d.props, function(v, k) {
-                        if(k.includes("support")) {
-                            last_support = parseFloat(v)
-                        } else if(k.includes("resistance")) {
-                            last_resist = parseFloat(v);
-                        }
-                    })
-                    ret_data.curr_resist = Math.floor(last_resist / 10) * 10;
-
-                    if(ret_data.prev_sell_resist > ret_data.sell_resist && ret_data.sell_resist >= ret_data.curr_resist
-                        && last_support >= ret_data.curr_resist) {
-                        ret_data["result"] = true;
-                    }
-                }
-            }
 
             if(prev_datum) {
                 if(d.total_state && moment(end_date).add(1,'day') >= new Date(d.unixtime)) {
+                    d["prev"] = prev_sell_signal;
+                    d["next"] = sell_signal;
                     if(prev_datum.current_state === '하락' && d.current_state === '상승' && parseInt(d.props["최근갯수"]) < 2) {
                         prev_buy_signal = buy_signal;
                         buy_signal = d;
@@ -260,6 +221,44 @@ common.chart = (function() {
                     }
                 }
             }
+
+            if(moment(d.unixtime).format("YYYY-MM-DD") === moment(end_date).format("YYYY-MM-DD")) {
+                ret_data["signal"] = false;
+                var last_prev = 0;
+                var last_next = 0;
+                var curr_prev = 0;
+                var curr_next = 0;
+                _.each(prev_datum["prev"].props, function(v, k) {
+                    if(k.includes("resistance")) {
+                        last_prev = parseFloat(v);
+                    }
+                })
+
+                _.each(prev_datum["next"].props, function(v, k) {
+                    if(k.includes("resistance")) {
+                        last_next = parseFloat(v);
+                    }
+                })
+
+                _.each(d["prev"].props, function(v, k) {
+                    if(k.includes("resistance")) {
+                        curr_prev = parseFloat(v);
+                    }
+                })
+
+                _.each(d["next"].props, function(v, k) {
+                    if(k.includes("resistance")) {
+                        curr_next = parseFloat(v);
+                    }
+                })
+
+                if(last_prev > curr_prev || last_next > curr_next) {
+                    if(d.Close > curr_next) {
+                        ret_data["signal"] = true;
+                    }
+                }
+            }
+
             prev_datum = d;
             
             return {

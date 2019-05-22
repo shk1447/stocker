@@ -24,7 +24,8 @@ export default {
             activeContextMenu:false,
             top:'0px',
             left:'0px',
-            params : {}
+            params : {},
+            analysisDate:new Date()
         }
     },
     components:{
@@ -54,22 +55,9 @@ export default {
                         if(!d.type) {
                             count++;
                             api.getData(d.id, moment().add(1, 'day').format("YYYY-MM-DD")).then(function(data) {
-                                var analysis_data = common.chart.analysis(data, d.unixtime, d.supstance);
+                                var analysis_data = common.chart.analysis(data, moment(me.analysisDate).format("YYYY-MM-DD"), d.supstance);
 
-                                // var min_buy = analysis_data.buy_support >= analysis_data.buy_resist ? analysis_data.buy_resist : analysis_data.buy_support;
-                                // var max_buy = analysis_data.buy_support <= analysis_data.buy_resist ? analysis_data.buy_resist : analysis_data.buy_support;
-                                // var min_sell = analysis_data.sell_support >= analysis_data.sell_resist ? analysis_data.sell_resist : analysis_data.sell_support;
-                                // var max_sell = analysis_data.sell_support <= analysis_data.sell_resist ? analysis_data.sell_resist : analysis_data.sell_support;
-                                
-                                // if(isRange(min_sell, min_buy, max_buy) || isRange(max_sell, min_buy, max_buy)) {
-                                //     alarm_items[d.id] = 1.2;
-                                // }
-                                
-                                // if(analysis_data.sell_resist >= analysis_data.sell_support && d.price > analysis_data.sell_support) {
-                                //     alarm_items[d.id] = 1.2;
-                                // }
-
-                                if(analysis_data.result) {
+                                if(analysis_data.signal) {
                                     alarm_items[d.id] = 1.2;
                                 }
 
@@ -105,6 +93,9 @@ export default {
         var me = this;
         console.log('mounted');
         common.events.on('contextmenu', me.handleContextMenu)
+        common.events.on('changeDate', function(d) {
+            me.analysisDate = d.date;
+        })
     },
     beforeUpdate() {
 
