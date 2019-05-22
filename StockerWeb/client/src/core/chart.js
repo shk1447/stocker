@@ -223,7 +223,7 @@ common.chart = (function() {
             }
 
             if(moment(d.unixtime).format("YYYY-MM-DD") === moment(end_date).format("YYYY-MM-DD")) {
-                ret_data["signal"] = false;
+                ret_data["signal"] = 0;
                 var last_prev = 0;
                 var last_next = 0;
                 var curr_prev = 0;
@@ -253,10 +253,18 @@ common.chart = (function() {
                 })
 
                 if(last_prev > curr_prev || last_next > curr_next) {
-                    if(d.Close > curr_next) {
-                        ret_data["signal"] = true;
+                    if(prev_datum.Close < Math.min(last_prev, last_next)) {
+                        if(d.Close > Math.min(curr_prev, curr_next)) {
+                            ret_data["signal"] = 1;
+                        }
                     }
                 }
+
+                // if(last_next < curr_next) {
+                //     if(d.Close > Math.min(last_prev, last_next)) {
+                //         ret_data["signal"] = -1;
+                //     }
+                // }
             }
 
             prev_datum = d;

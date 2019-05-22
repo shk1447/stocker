@@ -48,26 +48,29 @@ export default {
                     var nodes = common.view.getNodes();
                     var count = 0;
                     var alarm_items = {};
-                    function isRange(x, min, max) {
-                        return ((x-min) * (x-max) <= 0);
+                    me.$loading({})
+                    try {
+                        _.each(nodes, function(d,i) {
+                            if(!d.type) {
+                                count++;
+                                api.getData(d.id, moment().add(1, 'day').format("YYYY-MM-DD")).then(function(data) {
+                                    var analysis_data = common.chart.analysis(data, moment(me.analysisDate).format("YYYY-MM-DD"), d.supstance);
+
+                                    if(analysis_data.signal !== 0) {
+                                        alarm_items[d.id] = 0.2 * analysis_data.signal;
+                                    }
+
+                                    count--;
+                                    if(count === 0) {
+                                        common.view.setAlarm(alarm_items);
+                                        me.$loading({}).close();
+                                    }
+                                })
+                            }
+                        })
+                    } catch (error) {
+                        me.$loading({}).close();
                     }
-                    _.each(nodes, function(d,i) {
-                        if(!d.type) {
-                            count++;
-                            api.getData(d.id, moment().add(1, 'day').format("YYYY-MM-DD")).then(function(data) {
-                                var analysis_data = common.chart.analysis(data, moment(me.analysisDate).format("YYYY-MM-DD"), d.supstance);
-
-                                if(analysis_data.signal) {
-                                    alarm_items[d.id] = 1.2;
-                                }
-
-                                count--;
-                                if(count === 0) {
-                                    common.view.setAlarm(alarm_items);
-                                }
-                            })
-                        }
-                    })
                 break;
             }
             me.activeContextMenu = false;

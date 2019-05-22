@@ -464,7 +464,7 @@ common.view = (function() {
         setAlarm:function(items) {
             _.each(activeNodes, function(node, i) {
                 if(items[node.id]) {
-                    node["y"] = node["y"] * items[node.id];
+                    node["y"] += node["y"] * items[node.id];
                 }
             })
             redraw();
