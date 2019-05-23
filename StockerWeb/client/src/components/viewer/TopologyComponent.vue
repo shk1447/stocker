@@ -146,6 +146,7 @@ export default {
         var me = this;
         console.log('mounted');
         common.view.init('view-space');
+        common.events.emit('changeDate', {date:this.collection_date});
         common.socket.connect().then(function(data) {
             console.log('connected');
             common.socket.on('collection.complete', function(data) {

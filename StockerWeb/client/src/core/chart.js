@@ -108,7 +108,7 @@ common.chart = (function() {
                         last_resist = parseFloat(v);
                     }
                 })
-                // supstanceData.push({value:Math.floor(last_support / 10) * 10, type:'loss'})
+                //supstanceData.push({value:Math.floor(last_support / 10) * 10, type:'support'})
                 supstanceData.push({value:Math.floor(last_resist / 10) * 10, type:'high'})
 
                 _.each(prev_sell_signal.props, function(v, k) {
@@ -228,37 +228,63 @@ common.chart = (function() {
                 var last_next = 0;
                 var curr_prev = 0;
                 var curr_next = 0;
-                _.each(prev_datum["prev"].props, function(v, k) {
-                    if(k.includes("resistance")) {
-                        last_prev = parseFloat(v);
-                    }
-                })
-
-                _.each(prev_datum["next"].props, function(v, k) {
-                    if(k.includes("resistance")) {
-                        last_next = parseFloat(v);
-                    }
-                })
-
-                _.each(d["prev"].props, function(v, k) {
-                    if(k.includes("resistance")) {
-                        curr_prev = parseFloat(v);
-                    }
-                })
-
-                _.each(d["next"].props, function(v, k) {
-                    if(k.includes("resistance")) {
-                        curr_next = parseFloat(v);
-                    }
-                })
-
-                if(last_prev > curr_prev || last_next > curr_next) {
-                    if(prev_datum.Close < Math.min(last_prev, last_next)) {
-                        if(d.Close > Math.min(curr_prev, curr_next)) {
-                            ret_data["signal"] = 1;
+                if(prev_datum["prev"]) {
+                    _.each(prev_datum["prev"].props, function(v, k) {
+                        if(k.includes("resistance")) {
+                            last_prev = parseFloat(v);
                         }
+                    })
+    
+                    _.each(prev_datum["next"].props, function(v, k) {
+                        if(k.includes("resistance")) {
+                            last_next = parseFloat(v);
+                        }
+                    })
+    
+                    _.each(d["prev"].props, function(v, k) {
+                        if(k.includes("resistance")) {
+                            curr_prev = parseFloat(v);
+                        }
+                    })
+    
+                    _.each(d["next"].props, function(v, k) {
+                        if(k.includes("resistance")) {
+                            curr_next = parseFloat(v);
+                        }
+                    })
+    
+                    var prev_resist = 0;
+                    _.each(prev_datum.props, function(v, k) {
+                        if(k.includes("resistance")) {
+                            prev_resist = parseFloat(v);
+                        }
+                    })
+                    var last_resist = 0;
+                    _.each(d.props, function(v, k) {
+                        if(k.includes("resistance")) {
+                            last_resist = parseFloat(v);
+                        }
+                    })
+    
+                    // if(last_prev > curr_prev || last_next > curr_next) {
+                    //     if(d.Close > Math.min(curr_prev, curr_next)) {
+                    //         if(prev_datum.Close < prev_resist && d.Close > last_resist) {
+                    //             ret_data["signal"]++;
+                    //         }
+                    //     }
+                    // }
+    
+                    // if(curr_prev < curr_next && d.Close < Math.max(curr_prev, curr_next)) {
+                    //     if(prev_datum.Close < prev_resist && d.Close > last_resist) {
+                    //         ret_data["signal"]++;
+                    //     }
+                    // }
+
+                    if(prev_datum.Close < prev_resist && d.Close > last_resist && d.Close > prev_resist) {
+                        ret_data["signal"]++;
                     }
                 }
+                
 
                 // if(last_next < curr_next) {
                 //     if(d.Close > Math.min(last_prev, last_next)) {
