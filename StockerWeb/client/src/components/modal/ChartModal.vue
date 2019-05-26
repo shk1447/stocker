@@ -249,9 +249,7 @@ export default {
     }
 
     path.tradearrow.buy-pending {
-        fill-opacity: 0.2;
-        stroke: #0000FF;
-        stroke-width: 1.5;
+        stroke: green;
     }
 
     path.tradearrow.sell {

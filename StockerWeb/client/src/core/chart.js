@@ -76,50 +76,34 @@ common.chart = (function() {
         trades = [];
         var prev_datum;
         var buy_signal;
-        var prev_buy_signal;
         var sell_signal;
-        var prev_sell_signal;
-
-        var buy_money = 0;
-        var buy_volume = 0;
-        var sell_money = 0;
-        var sell_volume = 0;
-
+        
         var end_date = end_date ? new Date(end_date) : new Date();
         data = data.map(function(d) {
             d.props = JSON.parse(d.props);
+            d.supports = 0;
+            d.resists = 0;
+            _.each(d.props, function(v, k) {
+                if(k.includes("support")) {
+                    d.last_support = parseFloat(v);
+                    d.supports++;
+                } else if(k.includes("resistance")) {
+                    d.last_resist = parseFloat(v);
+                    d.resists++;
+                }
+            })
 
             if(moment(d.unixtime).format("YYYY-MM-DD") === moment(end_date).format("YYYY-MM-DD")) {
-                var last_support = 0;
-                var last_resist = 0;
-                _.each(d.props, function(v, k) {
-                    if(k.includes("support")) {
-                        last_support = parseFloat(v)
-                    } else if(k.includes("resistance")) {
-                        last_resist = parseFloat(v);
-                    }
-                })
-                //supstanceData.push({value:Math.floor(last_support / 10) * 10, type:'support'})
-                supstanceData.push({value:Math.floor(last_resist / 10) * 10, type:'regist'})
-                _.each(sell_signal.props, function(v, k) {
-                    if(k.includes("support")) {
-                        last_support = parseFloat(v)
-                    } else if(k.includes("resistance")) {
-                        last_resist = parseFloat(v);
-                    }
-                })
-                //supstanceData.push({value:Math.floor(last_support / 10) * 10, type:'support'})
-                supstanceData.push({value:Math.floor(last_resist / 10) * 10, type:'high'})
+                supstanceData.push({value:Math.floor(d.last_support), type:'support'})
+                supstanceData.push({value:Math.floor(d.last_resist), type:'regist'})
+                
+                if(sell_signal) {
+                    supstanceData.push({value:Math.floor(sell_signal.last_resist), type:'high'})
+                }
 
-                _.each(prev_sell_signal.props, function(v, k) {
-                    if(k.includes("support")) {
-                        last_support = parseFloat(v)
-                    } else if(k.includes("resistance")) {
-                        last_resist = parseFloat(v);
-                    }
-                })
-                // supstanceData.push({value:Math.floor(last_support / 10) * 10, type:'loss'})
-                supstanceData.push({value:Math.floor(last_resist / 10) * 10, type:'loss'})
+                if(buy_signal) {
+                    supstanceData.push({value:Math.floor(buy_signal.last_support), type:'loss'})
+                }
             }
 
             if(prev_datum) {
@@ -127,8 +111,10 @@ common.chart = (function() {
                     if(prev_datum.current_state === '하락' && d.current_state === '상승' && parseInt(d.props["최근갯수"]) < 2) {
                         prev_buy_signal = buy_signal;
                         trades.push({date:parseDate(d.unixtime), type:'buy', price:d.Low, quantity:1})
+                        console.log(moment(d.unixtime).format("YYYY-MM-DD"), d.supports > d.support_count);
                         buy_signal = d;
                     }
+                    
                     if(prev_datum.current_state === '상승' && d.current_state === '하락' && parseInt(d.props["최근갯수"]) < 2) {
                         prev_sell_signal = sell_signal;
                         trades.push({date:parseDate(d.unixtime), type:'sell', price:d.High, quantity:1});
