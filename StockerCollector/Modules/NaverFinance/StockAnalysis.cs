@@ -384,6 +384,7 @@ namespace Finance
                                         }
                                     }
                                     result[i].Add(id, nextValue);
+                                    prev_value = nextValue;
                                 }
                                 next++;
                             }
