@@ -92,6 +92,8 @@ namespace Finance
             var lastState = "횡보";
             var supportArr = new JsonArray();
             var resistanceArr = new JsonArray();
+            var last_support = 0.0;
+            var last_resist = 0.0;
             foreach (var data_key in datum.GetDictionary().Keys)
             {
                 if (data_key.Contains("support"))
@@ -103,6 +105,7 @@ namespace Finance
                     }
                     lastState = "상승";
                     supportArr.Add(double.Parse(datum[data_key].ToString()));
+                    last_support = double.Parse(datum[data_key].ToString());
                     currentCount++;
                 }
                 else if (data_key.Contains("resistance"))
@@ -114,9 +117,12 @@ namespace Finance
                     }
                     lastState = "하락";
                     resistanceArr.Add(double.Parse(datum[data_key].ToString()));
+                    last_resist = double.Parse(datum[data_key].ToString());
                     currentCount++;
                 }
             }
+            data_source[i - 1].Add("last_resist", last_resist);
+            data_source[i - 1].Add("last_support", last_support);
             double price = double.Parse(datum[key].ToString());
             double start_price = double.Parse(datum["시가"].ToString());
             var real_support = supportArr.Where<JsonValue>(p => p.ReadAs<double>() < price);

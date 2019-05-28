@@ -81,21 +81,26 @@ common.chart = (function() {
         var end_date = end_date ? new Date(end_date) : new Date();
         data = data.map(function(d) {
             d.props = JSON.parse(d.props);
-            d.supports = 0;
-            d.resists = 0;
-            _.each(d.props, function(v, k) {
-                if(k.includes("support")) {
-                    d.last_support = parseFloat(v);
-                    d.supports++;
-                } else if(k.includes("resistance")) {
-                    d.last_resist = parseFloat(v);
-                    d.resists++;
-                }
-            })
+            // d.supports = 0;
+            // d.resists = 0;
+            // _.each(d.props, function(v, k) {
+            //     if(k.includes("support")) {
+            //         d.last_support = parseFloat(v);
+            //         d.supports++;
+            //     } else if(k.includes("resistance")) {
+            //         d.last_resist = parseFloat(v);
+            //         d.resists++;
+            //     }
+            // })
 
             if(moment(d.unixtime).format("YYYY-MM-DD") === moment(end_date).format("YYYY-MM-DD")) {
-                supstanceData.push({value:Math.floor(d.last_support), type:'support'})
-                supstanceData.push({value:Math.floor(d.last_resist), type:'regist'})
+                if(d.props["지지가격대"]) {
+                    _.each(d.props["지지가격대"].split(","), function(cross,i) {
+                        supstanceData.push({value:parseFloat(cross), type:'cross'});
+                    })
+                }
+                supstanceData.push({value:Math.floor(d.props.last_support), type:'support'})
+                supstanceData.push({value:Math.floor(d.props.last_resist), type:'regist'})
                 
                 if(sell_signal) {
                     supstanceData.push({value:Math.floor(sell_signal.last_resist), type:'high'})
