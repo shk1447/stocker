@@ -92,6 +92,8 @@ namespace Finance
             var lastState = "횡보";
             var supportArr = new JsonArray();
             var resistanceArr = new JsonArray();
+            var total_resists = 0;
+            var total_supports = 0;
             var last_support = 0.0;
             var last_resist = 0.0;
             foreach (var data_key in datum.GetDictionary().Keys)
@@ -107,6 +109,7 @@ namespace Finance
                     supportArr.Add(double.Parse(datum[data_key].ToString()));
                     last_support = double.Parse(datum[data_key].ToString());
                     currentCount++;
+                    total_supports++;
                 }
                 else if (data_key.Contains("resistance"))
                 {
@@ -119,16 +122,19 @@ namespace Finance
                     resistanceArr.Add(double.Parse(datum[data_key].ToString()));
                     last_resist = double.Parse(datum[data_key].ToString());
                     currentCount++;
+                    total_resists++;
                 }
             }
             data_source[i - 1].Add("last_resist", last_resist);
             data_source[i - 1].Add("last_support", last_support);
+            data_source[i - 1].Add("resists", total_resists);
+            data_source[i - 1].Add("supports", total_supports);
             double price = double.Parse(datum[key].ToString());
             double start_price = double.Parse(datum["시가"].ToString());
-            var real_support = supportArr.Where<JsonValue>(p => p.ReadAs<double>() < price);
-            var reverse_support = supportArr.Where<JsonValue>(p => p.ReadAs<double>() > price);
-            var real_resistance = resistanceArr.Where<JsonValue>(p => p.ReadAs<double>() > price);
-            var reverse_resistance = resistanceArr.Where<JsonValue>(p => p.ReadAs<double>() < price);
+            var real_support = supportArr.Where<JsonValue>(p => p.ReadAs<double>() <= price);
+            var reverse_support = supportArr.Where<JsonValue>(p => p.ReadAs<double>() >= price);
+            var real_resistance = resistanceArr.Where<JsonValue>(p => p.ReadAs<double>() >= price);
+            var reverse_resistance = resistanceArr.Where<JsonValue>(p => p.ReadAs<double>() <= price);
 
             var total_support = new JsonArray();
             var total_resistance = new JsonArray();

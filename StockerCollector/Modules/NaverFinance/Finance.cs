@@ -399,9 +399,9 @@ namespace Finance
 
                     if (sise.ContainsKey("종가"))
                     {
+                        var analysis_sise = StockAnalysis.Instance.AutoAnalysis("day", code, siseUnix, sise);
                         Task.Factory.StartNew(() =>
                         {
-                            var analysis_sise = StockAnalysis.Instance.AutoAnalysis("day", code, siseUnix, sise);
                             result.rawdata.Add(analysis_sise);
                             var setSourceQuery = MariaQueryBuilder.SetDataSource(result);
                             MariaDBConnector.Instance.SetQuery("DynamicQueryExecuter", setSourceQuery);
@@ -615,6 +615,7 @@ namespace Finance
                     }
                     if (result.rawdata.Count > 0)
                     {
+                        result.rawdata = StockAnalysis.Instance.AllAnalysis(result);
                         ThreadPool.QueueUserWorkItem((a) =>
                         {
                             var setSourceQuery = MariaQueryBuilder.SetDataSource(result);

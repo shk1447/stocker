@@ -81,21 +81,13 @@ common.chart = (function() {
         var end_date = end_date ? new Date(end_date) : new Date();
         data = data.map(function(d) {
             d.props = JSON.parse(d.props);
-            // d.supports = 0;
-            // d.resists = 0;
-            // _.each(d.props, function(v, k) {
-            //     if(k.includes("support")) {
-            //         d.last_support = parseFloat(v);
-            //         d.supports++;
-            //     } else if(k.includes("resistance")) {
-            //         d.last_resist = parseFloat(v);
-            //         d.resists++;
-            //     }
-            // })
+            if(d.props["지지가격대"]) {
+                d.props["cross"] = d.props["지지가격대"].split(",");
+            }
 
             if(moment(d.unixtime).format("YYYY-MM-DD") === moment(end_date).format("YYYY-MM-DD")) {
-                if(d.props["지지가격대"]) {
-                    _.each(d.props["지지가격대"].split(","), function(cross,i) {
+                if(d.props.cross) {
+                    _.each(d.props.cross, function(cross,i) {
                         supstanceData.push({value:parseFloat(cross), type:'cross'});
                     })
                 }
@@ -115,14 +107,30 @@ common.chart = (function() {
                 if(d.total_state && moment(end_date).add(1,'day') >= new Date(d.unixtime)) {
                     if(prev_datum.current_state === '하락' && d.current_state === '상승' && parseInt(d.props["최근갯수"]) < 2) {
                         prev_buy_signal = buy_signal;
-                        trades.push({date:parseDate(d.unixtime), type:'buy', price:d.Low, quantity:1})
-                        console.log(moment(d.unixtime).format("YYYY-MM-DD"), d.supports > d.support_count);
+                        
+                        // 하락 중 발생신호 탐색
+                        if(d.props.resists >= d.props.supports) {
+                            if(d.supports < d.support_count) {
+                                trades.push({date:parseDate(d.unixtime), type:'buy-pending', price:d.Low, quantity:1});
+                            }
+                        }
+                        // 상승 중 발생신호 탐색
+                        if(d.support_count <= d.regist_count) {
+                            if(d.supports > d.resists) {
+                                trades.push({date:parseDate(d.unixtime), type:'buy', price:d.Low, quantity:1});
+                            }
+                        }
+                        console.log(moment(d.unixtime).format("YYYY-MM-DD"), d, buy_signal, sell_signal);
+                        
                         buy_signal = d;
                     }
                     
                     if(prev_datum.current_state === '상승' && d.current_state === '하락' && parseInt(d.props["최근갯수"]) < 2) {
                         prev_sell_signal = sell_signal;
-                        trades.push({date:parseDate(d.unixtime), type:'sell', price:d.High, quantity:1});
+                        if(d.props.supports >= d.props.resists) {
+                            trades.push({date:parseDate(d.unixtime), type:'sell', price:d.High, quantity:1});
+                        }
+                        
                         sell_signal = d;
                     }
                 }
