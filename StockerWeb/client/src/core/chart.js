@@ -109,14 +109,14 @@ common.chart = (function() {
                         prev_buy_signal = buy_signal;
                         
                         // 하락 중 발생신호 탐색
-                        if(d.props.resists >= d.props.supports) {
-                            if(d.supports < d.support_count) {
+                        if(parseFloat(d.props.resists) >= parseFloat(d.props.supports)) {
+                            if(parseFloat(d.props.supports) < d.support_count) {
                                 trades.push({date:parseDate(d.unixtime), type:'buy-pending', price:d.Low, quantity:1});
                             }
                         }
                         // 상승 중 발생신호 탐색
                         if(d.support_count <= d.regist_count) {
-                            if(d.supports > d.resists) {
+                            if(parseFloat(d.props.supports) > parseFloat(d.props.resists)) {
                                 trades.push({date:parseDate(d.unixtime), type:'buy', price:d.Low, quantity:1});
                             }
                         }
@@ -127,7 +127,7 @@ common.chart = (function() {
                     
                     if(prev_datum.current_state === '상승' && d.current_state === '하락' && parseInt(d.props["최근갯수"]) < 2) {
                         prev_sell_signal = sell_signal;
-                        if(d.props.supports >= d.props.resists) {
+                        if(parseFloat(d.props.supports) >= parseFloat(d.props.resists)) {
                             trades.push({date:parseDate(d.unixtime), type:'sell', price:d.High, quantity:1});
                         }
                         
