@@ -127,7 +127,7 @@ common.chart = (function() {
                     
                     if(prev_datum.current_state === '상승' && d.current_state === '하락' && parseInt(d.props["최근갯수"]) < 2) {
                         prev_sell_signal = sell_signal;
-                        if(parseFloat(d.props.supports) >= parseFloat(d.props.resists)) {
+                        if(parseFloat(d.supports) >= parseFloat(d.resists)) {
                             trades.push({date:parseDate(d.unixtime), type:'sell', price:d.High, quantity:1});
                         }
                         

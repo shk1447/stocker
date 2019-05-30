@@ -131,10 +131,10 @@ namespace Finance
             data_source[i - 1].Add("supports", total_supports);
             double price = double.Parse(datum[key].ToString());
             double start_price = double.Parse(datum["시가"].ToString());
-            var real_support = supportArr.Where<JsonValue>(p => p.ReadAs<double>() <= price);
-            var reverse_support = supportArr.Where<JsonValue>(p => p.ReadAs<double>() >= price);
-            var real_resistance = resistanceArr.Where<JsonValue>(p => p.ReadAs<double>() >= price);
-            var reverse_resistance = resistanceArr.Where<JsonValue>(p => p.ReadAs<double>() <= price);
+            var real_support = supportArr.Where<JsonValue>(p => p.ReadAs<double>() < price);
+            var reverse_support = supportArr.Where<JsonValue>(p => p.ReadAs<double>() > price);
+            var real_resistance = resistanceArr.Where<JsonValue>(p => p.ReadAs<double>() > price);
+            var reverse_resistance = resistanceArr.Where<JsonValue>(p => p.ReadAs<double>() < price);
 
             var total_support = new JsonArray();
             var total_resistance = new JsonArray();
