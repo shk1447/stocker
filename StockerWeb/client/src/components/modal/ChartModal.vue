@@ -217,6 +217,18 @@ export default {
         stroke-dasharray: 3, 3;
     }
 
+    .scope-supstance.buy path {
+        stroke: goldenrod;
+        stroke-width: 2.5;
+        stroke-dasharray: 5, 5;
+    }
+
+    .scope-supstance.sell path {
+        stroke: violet;
+        stroke-width: 2.5;
+        stroke-dasharray: 5, 5;
+    }
+
     .mouseover .supstance path {
         stroke-width: 1.5;
     }

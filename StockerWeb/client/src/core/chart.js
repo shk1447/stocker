@@ -77,6 +77,10 @@ common.chart = (function() {
         var prev_datum;
         var buy_signal;
         var sell_signal;
+        var buy_money = 0;
+        var buy_volume = 0;
+        var sell_money = 0;
+        var sell_volume = 0;
         
         var end_date = end_date ? new Date(end_date) : new Date();
         data = data.map(function(d) {
@@ -94,13 +98,31 @@ common.chart = (function() {
                 supstanceData.push({value:Math.floor(d.props.last_support), type:'support'})
                 supstanceData.push({value:Math.floor(d.props.last_resist), type:'regist'})
                 
-                if(sell_signal) {
-                    supstanceData.push({value:Math.floor(sell_signal.last_resist), type:'high'})
-                }
+                var test = supstanceData.map(function(o) { return o.value })
+                test.push(Math.floor(sell_signal.props.last_resist));
+                test.push(Math.floor(buy_signal.props.last_support));
+                // if(sell_signal) {
+                //     supstanceData.push({value:Math.floor(sell_signal.props.last_resist), type:'high'})
+                // }
 
-                if(buy_signal) {
-                    supstanceData.push({value:Math.floor(buy_signal.last_support), type:'loss'})
-                }
+                // if(buy_signal) {
+                //     supstanceData.push({value:Math.floor(buy_signal.props.last_support), type:'loss'})
+                // }
+                var max = Math.max.apply(Math, test);
+                var min = Math.min.apply(Math, test);
+                _.each(trades, function(trade, k) {
+                    if(trade.type.includes("buy")) {
+                        if(trade.price >= min && trade.price <= max) {
+                            buy_money += trade.price * trade.volume;
+                            buy_volume += trade.volume
+                        }
+                    } else {
+                        if(trade.price >= min && trade.price <= max) {
+                            sell_money += trade.price * trade.volume;
+                            sell_volume += trade.volume
+                        }
+                    }
+                })
             }
 
             if(prev_datum) {
@@ -111,24 +133,45 @@ common.chart = (function() {
                         // 하락 중 발생신호 탐색
                         if(parseFloat(d.props.resists) >= parseFloat(d.props.supports)) {
                             if(parseFloat(d.props.supports) < d.support_count) {
-                                trades.push({date:parseDate(d.unixtime), type:'buy-pending', price:d.Low, quantity:1});
+                                // if(current_data.Close >= d.Close) {
+                                //     var avg_price = (d.High + d.Close) / 2;
+                                //     buy_money += avg_price * d.Volume;
+                                //     buy_volume += d.Volume;
+                                // }
+                                trades.push({date:parseDate(d.unixtime), type:'buy-pending', price:d.Low, volume:d.Volume, quantity:1});
+                                // if(prev_datum.support_count < d.support_count && prev_datum.regist_count > d.regist_count) {
+                                    
+                                // }
+                                console.log(moment(d.unixtime).format("YYYY-MM-DD"), d, prev_datum);
                             }
                         }
                         // 상승 중 발생신호 탐색
                         if(d.support_count <= d.regist_count) {
                             if(parseFloat(d.props.supports) > parseFloat(d.props.resists)) {
-                                trades.push({date:parseDate(d.unixtime), type:'buy', price:d.Low, quantity:1});
+                                // if(current_data.Close >= d.Close) {
+                                //     var avg_price = (d.High + d.Close) / 2;
+                                //     buy_money += avg_price * d.Volume;
+                                //     buy_volume += d.Volume;
+                                // }
+                                trades.push({date:parseDate(d.unixtime), type:'buy', price:d.Low, volume:d.Volume, quantity:1});
+                                // if(prev_datum.support_count < d.support_count && prev_datum.regist_count > d.regist_count) {
+                                    
+                                // }
                             }
                         }
-                        console.log(moment(d.unixtime).format("YYYY-MM-DD"), d, buy_signal, sell_signal);
                         
                         buy_signal = d;
                     }
                     
                     if(prev_datum.current_state === '상승' && d.current_state === '하락' && parseInt(d.props["최근갯수"]) < 2) {
                         prev_sell_signal = sell_signal;
-                        if(parseFloat(d.supports) >= parseFloat(d.resists)) {
-                            trades.push({date:parseDate(d.unixtime), type:'sell', price:d.High, quantity:1});
+                        if(parseFloat(d.props.supports) >= parseFloat(d.props.resists)) {
+                            // if(current_data.Close <= d.Close) {
+                            //     var avg_price = (d.Low + d.Close) / 2;
+                            //     sell_money += avg_price * d.Volume;
+                            //     sell_volume += d.Volume;
+                            // }
+                            trades.push({date:parseDate(d.unixtime), type:'sell', price:d.High, volume:d.Volume, quantity:1});
                         }
                         
                         sell_signal = d;
@@ -147,8 +190,9 @@ common.chart = (function() {
             };
         }).sort(function(a, b) { return d3.ascending(accessor.d(a), accessor.d(b)); });
 
-        // supstanceData.push({value:sell_money / sell_volume, type:'high'});
-        // supstanceData.push({value:buy_money / buy_volume, type:'loss'});
+        supstanceData.push({value:buy_money / buy_volume, type:'buy'});
+        supstanceData.push({value:sell_money / sell_volume, type:'sell'});
+        
 
         x.domain(data.map(accessor.d));
         x2.domain(x.domain());
