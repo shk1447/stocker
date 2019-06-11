@@ -55,10 +55,30 @@ export default {
                                 count++;
                                 api.getData(d.id, moment().add(1, 'day').format("YYYY-MM-DD")).then(function(data) {
                                     var analysis_data = common.chart.analysis(data, moment(me.analysisDate).format("YYYY-MM-DD"), d.supstance);
+                                    console.log(analysis_data);
+                                    _.each(analysis_data.supstance, function(supstance_price, k) {
+                                        if(analysis_data.low < supstance_price && analysis_data.close > supstance_price) {
+                                            if(alarm_items[d.id]) {
+                                                alarm_items[d.id] += 0.5;
+                                            } else {
+                                                alarm_items[d.id] = 1.5;
+                                            }
+                                        }
+                                        // if(analysis_data.high > supstance_price && analysis_data.close < supstance_price) {
+                                        //     if(alarm_items[d.id]) {
+                                        //         alarm_items[d.id] -= 0.5;
+                                        //     } else {
+                                        //         alarm_items[d.id] = -1.5;
+                                        //     }
+                                        // }
+                                    })
+                                    // if(analysis_data.buy_price && analysis_data.price < analysis_data.buy_price) {
+                                    //     alarm_items[d.id] = 1.2;
+                                    // }
 
-                                    if(analysis_data.signal !== 0) {
-                                        alarm_items[d.id] = 0.2 * analysis_data.signal;
-                                    }
+                                    // if(analysis_data.sell_price && analysis_data.price < analysis_data.sell_price) {
+                                    //     alarm_items[d.id] = 1.2;
+                                    // }
 
                                     count--;
                                     if(count === 0) {
