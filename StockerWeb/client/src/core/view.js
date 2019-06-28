@@ -464,7 +464,8 @@ common.view = (function() {
         setAlarm:function(items) {
             _.each(activeNodes, function(node, i) {
                 if(items[node.id]) {
-                    node["y"] += node["y"] * items[node.id];
+                    node["x"] = -node["x"];
+                    //node["y"] += node["y"] * items[node.id];
                 }
             })
             redraw();
@@ -561,7 +562,9 @@ common.view = (function() {
 
                     item["status"] = 0;
 
-                    activeNodes.push(item);
+                    if(!activeNodes.find(function(d) { return d.id === item.id})) {
+                        activeNodes.push(item);
+                    }
                     activeLinks.push({
                         source:root.id,
                         target:item.id,

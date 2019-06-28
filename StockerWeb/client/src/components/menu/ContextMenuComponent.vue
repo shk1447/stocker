@@ -46,48 +46,43 @@ export default {
                 break;
                 case 'auto' :
                     var nodes = common.view.getNodes();
+                    var links = common.view.getLinks();
                     var count = 0;
                     var alarm_items = {};
                     me.$loading({})
                     try {
-                        _.each(nodes, function(d,i) {
-                            if(!d.type) {
-                                count++;
-                                api.getData(d.id, moment().add(1, 'day').format("YYYY-MM-DD")).then(function(data) {
-                                    var analysis_data = common.chart.analysis(data, moment(me.analysisDate).format("YYYY-MM-DD"), d.supstance);
-                                    console.log(analysis_data);
-                                    _.each(analysis_data.supstance, function(supstance_price, k) {
-                                        if(analysis_data.low < supstance_price && analysis_data.close > supstance_price) {
-                                            if(alarm_items[d.id]) {
-                                                alarm_items[d.id] += 0.5;
-                                            } else {
-                                                alarm_items[d.id] = 1.5;
-                                            }
-                                        }
-                                        // if(analysis_data.high > supstance_price && analysis_data.close < supstance_price) {
-                                        //     if(alarm_items[d.id]) {
-                                        //         alarm_items[d.id] -= 0.5;
-                                        //     } else {
-                                        //         alarm_items[d.id] = -1.5;
-                                        //     }
-                                        // }
-                                    })
-                                    // if(analysis_data.buy_price && analysis_data.price < analysis_data.buy_price) {
-                                    //     alarm_items[d.id] = 1.2;
-                                    // }
-
-                                    // if(analysis_data.sell_price && analysis_data.price < analysis_data.sell_price) {
-                                    //     alarm_items[d.id] = 1.2;
-                                    // }
-
-                                    count--;
-                                    if(count === 0) {
-                                        common.view.setAlarm(alarm_items);
-                                        me.$loading({}).close();
-                                    }
-                                })
+                        var test = {};
+                        _.each(links, function(d,i) {
+                            if(test[d.target]) {
+                                test[d.target]++;
+                            } else {
+                                test[d.target] = 1;
                             }
-                        })
+                        });
+                        _.each(test, function(d,i) {
+                            if(d > 1) {
+                                alarm_items[i] = d;
+                            }
+                        });
+                        common.view.setAlarm(alarm_items);
+                        // _.each(nodes, function(d,i) {
+                        //     if(!d.type) {
+                        //         count++;
+                        //         api.getData(d.id, moment().add(1, 'day').format("YYYY-MM-DD")).then(function(data) {
+                        //             var ad = common.chart.analysis(data, moment(me.analysisDate).format("YYYY-MM-DD"), d.supstance);
+                        //             if(ad.prev_buy.Open < ad.current.Close) {
+                        //                 alarm_items[d.id] = 1.5;
+                        //             }
+
+                        //             count--;
+                        //             if(count === 0) {
+                        //                 common.view.setAlarm(alarm_items);
+                        //                 me.$loading({}).close();
+                        //             }
+                        //         })
+                        //     }
+                        // })
+                        me.$loading({}).close();
                     } catch (error) {
                         me.$loading({}).close();
                     }
