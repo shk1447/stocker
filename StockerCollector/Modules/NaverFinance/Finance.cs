@@ -403,8 +403,11 @@ namespace Finance
                         {
                             var analysis_sise = StockAnalysis.Instance.AutoAnalysis("day", code, siseUnix, sise);
                             result.rawdata.Add(analysis_sise);
-                            var setSourceQuery = MariaQueryBuilder.SetDataSource(result);
-                            MariaDBConnector.Instance.SetQuery("DynamicQueryExecuter", setSourceQuery);
+                            Task.Factory.StartNew(() =>
+                            {
+                                var setSourceQuery = MariaQueryBuilder.SetDataSource(result);
+                                MariaDBConnector.Instance.SetQuery("DynamicQueryExecuter", setSourceQuery);
+                            });
                         });
                     }
                 }
