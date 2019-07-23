@@ -19,7 +19,7 @@ common.view = (function() {
 
     var activeNodes = [];
     var activeLinks = [];
-    var selected_id = [];
+    var selected_id = "";
 
     var types = [];
     var node_type = {};
@@ -41,12 +41,16 @@ common.view = (function() {
             x:x,
             y:y
         }
+        console.log('test!!!!!');
+        console.log(activeNodes);
+        console.log(activeNodes.find(function(d) { d.id === selected_id}));
+        var selected_node = activeNodes.find(function(d) { return d.id === selected_id});
         common.events.emit('contextmenu', {
             active:true,
             left : d3.event.pageX,
             top : d3.event.pageY,
             params : {
-                node_info:node_info,
+                node_info:selected_node,
                 node_types:types,
                 event:d3.event
             }
@@ -63,7 +67,7 @@ common.view = (function() {
             params : {}
         });
         
-        //selected_id = [];
+        selected_id = "";
         redraw();
     }
 
@@ -152,11 +156,9 @@ common.view = (function() {
     function nodeClicked(node, node_info) {
         d3.event.stopPropagation();
         d3.event.preventDefault();
-        if(selected_id.includes(node_info.id)) {
-            selected_id.splice(selected_id.indexOf(node_info.id), 1);
-        } else {
-            selected_id.push(node_info.id);
-        }
+        
+        selected_id = node_info.id
+        
         redraw();
     }
 
@@ -295,7 +297,7 @@ common.view = (function() {
             
             thisNode.attr("transform", function(d) { return "translate(" + (d.x) + "," + (d.y) + ")"; });
 
-            if(selected_id.includes(d.id)) {
+            if(selected_id === d.id) {
                 d.node.classed('selected', true)
                 d.node.attr('filter', 'url(#' + activeDropShadow + ')' );
                 // d.node.transition().duration(250).attr('width', node_size*2*2 ).attr('height', node_size*2*2 ).attr("fill", '#eaedf1')
@@ -352,10 +354,10 @@ common.view = (function() {
             var id = d.sourceNode.id + ":" + d.targetNode.id;
             var path_data = lineGenerator([[d.sourceNode.x, d.sourceNode.y],[d.targetNode.x, d.targetNode.y]])
             thisLink.attr("d", path_data).attr("stroke-width", node_size/4).attr('stroke','#888');
-            if(selected_id.includes(id)) {
+            if(selected_id === id) {
                 thisLink.attr('stroke', '#ff7f0e');
             }
-            if(selected_id.includes(d.sourceNode.id) || selected_id.includes(d.targetNode.id)) {
+            if(selected_id === d.sourceNode.id || selected_id === d.targetNode.id) {
                 var result = activeNodes.filter(function(a) {return a.id === d.sourceNode.id || a.id === d.targetNode.id});
                 result.forEach(function(v,i) {
                     v.node.attr('filter', 'url(#' + activeDropShadow + ')' );
@@ -383,13 +385,13 @@ common.view = (function() {
     }
 
     function deleteItem() {
-        var node_index = activeNodes.findIndex(function(d) {return selected_id.includes(d.id)});
+        var node_index = activeNodes.findIndex(function(d) {return selected_id === d.id});
         if(node_index >= 0) {
             var remove_index = [];
             var link_length = activeLinks.length;
             for(var i = 0; i < link_length; i++) {
                 var d = activeLinks[i];
-                if((selected_id.includes(d.sourceNode.id) || selected_id.includes(d.targetNode.id))) {
+                if((selected_id === d.sourceNode.id || selected_id === d.targetNode.id)) {
                     remove_index.push(i);
                 }
             }
@@ -687,7 +689,7 @@ common.view = (function() {
 
             activeNodes = [];
             activeLinks = [];
-            selected_id = [];
+            selected_id = "";
 
             node_type = {};
 

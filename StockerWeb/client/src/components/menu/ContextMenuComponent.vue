@@ -17,7 +17,8 @@ export default {
     data () {
         return {
             menu_items : [
-                            {id:'auto',label:'Analysis'},
+                            {id:'auto',label:'Auto'},
+                            {id:'manual',label:'Manual'},
                             {id:'reset',label:'Reset'},
                             {id:'zoom_reset',label:'Reset Zoom'}
                         ],
@@ -45,6 +46,25 @@ export default {
                     common.events.emit('message', {type:'warning' , message:'Not implemented.'})
                 break;
                 case 'auto' :
+                    console.log(this.params.node_info);
+                    if(this.params.node_info && this.params.node_info.type === "date") {
+                        var analysis_date = moment(this.params.node_info.id).add(1, 'day').format("YYYY-MM-DD");
+                        var nodes = common.view.getNodes();
+                        var alarm_items = {};
+                        _.each(nodes, function(d,i) {
+                            if(!d.type) {
+                                count++;
+                                api.getData(d.id, analysis_date).then(function(data) {
+                                    var ad = common.chart.analysis(data, moment(me.params.node_info.id).format("YYYY-MM-DD"), d.supstance);
+                                    console.log(d.name, ad);
+                                })
+                            }
+                        })
+                    } else {
+                        common.events.emit('message', {type:'warning' , message:'PLEASE SELECT DATE NODE!'})
+                    }
+                break;
+                case 'manual' :
                     var nodes = common.view.getNodes();
                     var links = common.view.getLinks();
                     var count = 0;
@@ -65,23 +85,6 @@ export default {
                             }
                         });
                         common.view.setAlarm(alarm_items);
-                        // _.each(nodes, function(d,i) {
-                        //     if(!d.type) {
-                        //         count++;
-                        //         api.getData(d.id, moment().add(1, 'day').format("YYYY-MM-DD")).then(function(data) {
-                        //             var ad = common.chart.analysis(data, moment(me.analysisDate).format("YYYY-MM-DD"), d.supstance);
-                        //             if(ad.prev_buy.Open < ad.current.Close) {
-                        //                 alarm_items[d.id] = 1.5;
-                        //             }
-
-                        //             count--;
-                        //             if(count === 0) {
-                        //                 common.view.setAlarm(alarm_items);
-                        //                 me.$loading({}).close();
-                        //             }
-                        //         })
-                        //     }
-                        // })
                         me.$loading({}).close();
                     } catch (error) {
                         me.$loading({}).close();

@@ -146,9 +146,11 @@ export default {
             this.refresh();
         },
         querySearchAsync(queryString, cb) {
-            api.getList(queryString).then(function(data) {
-                cb(data);
-            })
+            if(queryString.length > 0) {
+                api.getList(queryString).then(function(data) {
+                    cb(data);
+                })
+            }
         },
         onFullScreen() {
             if(document.webkitIsFullScreen) {
