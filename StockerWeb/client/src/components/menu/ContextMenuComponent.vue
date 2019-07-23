@@ -56,7 +56,13 @@ export default {
                                 count++;
                                 api.getData(d.id, analysis_date).then(function(data) {
                                     var ad = common.chart.analysis(data, moment(me.params.node_info.id).format("YYYY-MM-DD"), d.supstance);
-                                    console.log(d.name, ad);
+                                    if(parseFloat(ad.prev_buy.props.last_resist) < ad.current.Low) {
+                                        //console.log(d.name, ad);
+                                        if(parseFloat(ad.prev_buy.props.last_support) < ad.current.Close) {
+                                            console.log(d.name, ' ', ad.prev_buy.props.last_support, '원에서 지지받았으면, ',
+                                            ad.current.props.last_resist, ' ~ ', ad.current.props.last_support, '원에서 매수해라!');
+                                        }
+                                    }
                                 })
                             }
                         })
