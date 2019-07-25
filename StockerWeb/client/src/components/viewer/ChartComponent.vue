@@ -23,6 +23,21 @@
             </el-date-picker>
         </div>
         <div class="tool right">
+            <span style="font-size:1.2em;" @click="onPrice">
+                PRICE
+            </span>
+        </div>
+        <div class="tool right">
+            <span style="font-size:1.2em;" @click="onResist">
+                RESIST
+            </span>
+        </div>
+        <div class="tool right">
+            <span style="font-size:1.2em;" @click="onSupport">
+                SUPPORT
+            </span>
+        </div>
+        <div class="tool right">
             <span style="font-size:1.2em;" @click="onSetIchimoku">
                 일목균형표
             </span>
@@ -76,13 +91,26 @@ export default {
             signal:true,
             alarm:false,
             favorite:false,
-            end_date:new Date()
+            end_date:new Date(),
+            data_type:'price'
         }
     },
     components:{
         
     },
     methods: {
+        onPrice() {
+            this.data_type = 'price';
+            this.refresh();
+        },
+        onResist() {
+            this.data_type = 'resist';
+            this.refresh();
+        },
+        onSupport() {
+            this.data_type = 'support';
+            this.refresh();
+        },
         onChangeDate() {
             this.refresh();
         },
@@ -163,7 +191,7 @@ export default {
             var me = this;
             setTimeout(function() {
                 common.chart.uninit('chart-space');
-                common.chart.init('chart-space', {signal:me.signal});
+                common.chart.init('chart-space', {signal:me.signal,type:me.data_type});
                 var to_date = moment(me.end_date).add(1, 'day').format("YYYY-MM-DD")
                 api.getData(me.selected_item.category,to_date).then(function(data) {
                     var supstance = []

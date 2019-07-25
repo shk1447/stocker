@@ -2,6 +2,7 @@ const _ = require('lodash');
 const moment = require('moment');
 
 common.chart = (function() {
+    var type = 'price';
     var isIchimoku = false;
     function canvasContextMenu() {
         common.events.emit('contextmenu', {
@@ -147,14 +148,34 @@ common.chart = (function() {
             }
             prev_datum = d;
             
-            return {
-                date: parseDate(d.unixtime),
-                open: d.Open === 0 ? d.Close : +d.Open,
-                high: d.Open === 0 ? d.Close : +d.High,
-                low: d.Open === 0 ? d.Close : +d.Low,
-                close: d.Open === 0 ? d.Close : +d.Close,
-                volume: d.Open === 0 ? d.Close : +d.Volume
-            };
+            if(type === 'price') {
+                return {
+                    date: parseDate(d.unixtime),
+                    open: d.Open === 0 ? d.Close : +d.Open,
+                    high: d.Open === 0 ? d.Close : +d.High,
+                    low: d.Open === 0 ? d.Close : +d.Low,
+                    close: d.Open === 0 ? d.Close : +d.Close,
+                    volume: d.Open === 0 ? d.Close : +d.Volume
+                };
+            } else if(type === 'resist') {
+                return {
+                    date: parseDate(d.unixtime),
+                    open: parseFloat(d.props.last_resist),
+                    high: parseFloat(d.props.last_resist),
+                    low: parseFloat(d.props.last_resist),
+                    close: parseFloat(d.props.last_resist),
+                    volume: d.Open === 0 ? d.Close : +d.Volume
+                };
+            } else {
+                return {
+                    date: parseDate(d.unixtime),
+                    open: parseFloat(d.props.last_support),
+                    high: parseFloat(d.props.last_support),
+                    low: parseFloat(d.props.last_support),
+                    close: parseFloat(d.props.last_support),
+                    volume: d.Open === 0 ? d.Close : +d.Volume
+                };
+            }
         }).sort(function(a, b) { return d3.ascending(accessor.d(a), accessor.d(b)); });        
 
         x.domain(data.map(accessor.d));
@@ -313,6 +334,7 @@ common.chart = (function() {
         load: load,
         init:function(id, opt) {
             options = opt;
+            type = options.type ? options.type : 'price';
             container_div = document.getElementById(id);
 
             var margin_side = container_div.clientWidth/20 < 100 ? 100 : container_div.clientWidth/20;
