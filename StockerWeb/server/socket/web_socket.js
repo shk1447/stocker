@@ -1,6 +1,8 @@
+var _ = require('lodash');
 var socket_io = require('socket.io');
 var WebSocket = require('ws');
 var request = require('request');
+var modules = require('./modules')
 
 module.exports = function(httpServer,khan) {
     var io = socket_io.listen(httpServer, { 'destroy buffer size': Infinity });
@@ -19,7 +21,25 @@ module.exports = function(httpServer,khan) {
             } else {
                 socket.emit(d.target + "." + d.method, msg);
             }
-        }); 
+        });
+
+        socket.on('subscribe', function(data) {
+            try {
+                var data_module = modules[data.module_name];
+                data_module.subscribe(socket, data.options);
+            } catch (error) {
+                console.log(error);
+            }
+        })
+
+        socket.on('unsubscribe', function(data) {
+            try {
+                var data_module = modules[data.module_name];
+                data_module.unsubscribe(socket);
+            } catch (error) {
+                console.log(error);
+            }
+        })
 
         socket.on('fromclient', function(data){
             try {
@@ -48,6 +68,9 @@ module.exports = function(httpServer,khan) {
         
         socket.on('disconnect', function(){
             console.log('disconnected ', socket.id);
+            _.each(modules, (v,i) => {
+                v.unsubscribe(socket);
+            })
             ws.close();
         });
     })

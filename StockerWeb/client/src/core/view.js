@@ -6,7 +6,7 @@ require('./d3_extension/keybinding');
 
 common.view = (function() {
     var width, height, container_div;
-    var outer, vis, outer_background, link_group, node_types;
+    var outer, vis, outer_background, link_group;
     var x, y, gX, gY, xAxis, yAxis, zoom;
     var node_size = 16;
     var outer_transform = {
@@ -21,9 +21,6 @@ common.view = (function() {
     var activeLinks = [];
     var selected_id = "";
 
-    var types = [];
-    var node_type = {};
-
     var color_define = {
         "speed" : {
             "1G":"#008000",
@@ -34,16 +31,6 @@ common.view = (function() {
     }
 
     function canvasContextMenu() {
-        var x = (d3.event.offsetX - outer_transform.x ) / outer_transform.k;
-        var y = (d3.event.offsetY - outer_transform.y ) / outer_transform.k
-        var node_info = {
-            status:~~(Math.random() * (5 - 0 + 1)) + 0,
-            x:x,
-            y:y
-        }
-        console.log('test!!!!!');
-        console.log(activeNodes);
-        console.log(activeNodes.find(function(d) { d.id === selected_id}));
         var selected_node = activeNodes.find(function(d) { return d.id === selected_id});
         common.events.emit('contextmenu', {
             active:true,
@@ -51,7 +38,6 @@ common.view = (function() {
             top : d3.event.pageY,
             params : {
                 node_info:selected_node,
-                node_types:types,
                 event:d3.event
             }
         });
@@ -207,49 +193,45 @@ common.view = (function() {
             node.w = node_size;
             node.h = node_size;
             
-            if(d.status) {
-                var anim_alarm = node.append("circle")
+            var anim_alarm = node.append("circle")
                                 .attr("r", node_size)
                                 .attr("fill", "rgba(255,0,0,0)")
-                                .style("stroke", d.status > 0 ? "red" : 'blue')
                                 .style("stroke-width", 0)
-                var anim_alarm2 = node.append("circle")
-                                .attr("r", node_size)
-                                .attr("fill", "rgba(255,0,0,0)")
-                                .style("stroke", d.status > 0 ? "red" : 'blue')
-                                .style("stroke-width", 0)
-                
-                var anim_alarm3 = node.append("circle")
-                                .attr("r", node_size)
-                                .attr("fill", "rgba(255,0,0,0)")
-                                .style("stroke", d.status > 0 ? "red" : 'blue')
-                                .style("stroke-width", 0)
-
-                function repeat() {
-                    anim_alarm.attr('r', node_size*0.3).attr('opacity', 1).style("stroke-width", 0);
-                    anim_alarm.transition()
-                                .duration(1000)
-                                .attr("r", node_size*1.4)
-                                .attr('opacity', 0)
-                                .style("stroke-width", 2.5)
-                            .on("end", repeat)
-                    anim_alarm2.attr('r', node_size*0.6).attr('opacity', 1).style("stroke-width", 0);
-                    anim_alarm2.transition()
-                                .duration(1000)
-                                .attr("r", node_size*1.4)
-                                .attr('opacity', 0)
-                                .style("stroke-width", 2.5)
-                            .on("end", repeat)
-                    anim_alarm3.attr('r', node_size*0.9).attr('opacity', 1).style("stroke-width", 0);
-                    anim_alarm3.transition()
-                                        .duration(1000)
-                                        .attr("r", node_size*1.4)
-                                        .attr('opacity', 0)
-                                        .style("stroke-width", 2.5)
-                                    .on("end", repeat)
+            var anim_alarm2 = node.append("circle")
+                            .attr("r", node_size)
+                            .attr("fill", "rgba(255,0,0,0)")
+                            .style("stroke-width", 0)
+            
+            var anim_alarm3 = node.append("circle")
+                            .attr("r", node_size)
+                            .attr("fill", "rgba(255,0,0,0)")
+                            .style("stroke-width", 0)
+            
+            d.animate = function () {
+                if(d.status === 0) {
+                    return;
                 }
-                
-                repeat();
+                anim_alarm.attr('r', node_size*0.3).attr('opacity', 1).style("stroke-width", 0).style("stroke", d.status > 0 ? "red" : 'blue');
+                anim_alarm.transition()
+                            .duration(1000)
+                            .attr("r", node_size*1.4)
+                            .attr('opacity', 0)
+                            .style("stroke-width", 2.5)
+                        .on("end", d.animate)
+                anim_alarm2.attr('r', node_size*0.6).attr('opacity', 1).style("stroke-width", 0).style("stroke", d.status > 0 ? "red" : 'blue');
+                anim_alarm2.transition()
+                            .duration(1000)
+                            .attr("r", node_size*1.4)
+                            .attr('opacity', 0)
+                            .style("stroke-width", 2.5)
+                        .on("end", d.animate)
+                anim_alarm3.attr('r', node_size*0.9).attr('opacity', 1).style("stroke-width", 0).style("stroke", d.status > 0 ? "red" : 'blue');
+                anim_alarm3.transition()
+                                    .duration(1000)
+                                    .attr("r", node_size*1.4)
+                                    .attr('opacity', 0)
+                                    .style("stroke-width", 2.5)
+                                .on("end", d.animate)
             }
 
             if(d.supstance && d.supstance.length > 0) {
@@ -288,7 +270,27 @@ common.view = (function() {
             
             // node.append("image").attr("xlink:href", icon_url).attr("x", -node_size/2).attr("y", -node_size/2).attr("width", node_size).attr("height", node_size);
 
-            node.append('svg:text').attr('y', node_size+12).style('stroke', 'none').style("text-anchor", "middle").text(d.name);
+            var text_node = node.append('svg:text').attr('y', node_size+12).style('stroke', 'none').style("text-anchor", "middle").text(d.name);
+
+            d.update = function() {
+                if(d.detail) {
+                    
+                    var tspan = text_node.selectAll('tspan').data(Object.keys(d.detail), function(d) { return d; });
+                    tspan.exit().remove();
+                    var tspanEnter = tspan.enter().append('tspan');
+                    tspanEnter.each(function(a,i) {
+                        var node = d3.select(this);
+                        node.attr("x", 0).attr("dy", '1.5em')
+                        node.text(a + " :" + d.detail[a]);
+                    })
+                    tspan.each(function(a,i) {
+                        var node = d3.select(this);
+                        node.text(a + " :" + d.detail[a]);
+                    })
+
+                    //text_node.text(d.name + "\\n" + d.detail.Close + "원");
+                }
+            };
         });
 
         // 갱신
@@ -296,7 +298,8 @@ common.view = (function() {
             var thisNode = d3.select(this);
             
             thisNode.attr("transform", function(d) { return "translate(" + (d.x) + "," + (d.y) + ")"; });
-
+            //d.animate();
+            d.update();
             if(selected_id === d.id) {
                 d.node.classed('selected', true)
                 d.node.attr('filter', 'url(#' + activeDropShadow + ')' );
@@ -405,45 +408,6 @@ common.view = (function() {
         }
     }
 
-    function setNodeType(type) {
-        var type_size = {width:node_size*2,height:node_size};
-        var margin = 5;
-        var color_array = randomColor({
-            count: type.length,
-            hue: 'blue'
-        })
-        types = type;
-        type.forEach(function(d,i) {
-            var type_info = d;
-            var y = (type_size.height*i) + (margin*i);
-            var node_type_rect = node_types.append('rect').attr('rx', 5).attr('x', 0).attr('y', y)
-                        .attr('width', type_size.width).attr('height', type_size.height).attr('fill', color_array[i])
-                        .style("stroke", "#333")
-                        .style("cursor", "pointer");
-
-            node_type_rect.on('click', function(d) {
-                            console.log(type_info)
-                        })
-                        .on('mouseover', function(d) {
-                            node_type_rect.style('stroke', '#ff7f0e')
-                        })
-                        .on('mouseout', function(d) {
-                            node_type_rect.style('stroke', '#333')
-                        })
-            node_types.append("svg:text").attr("x", type_size.width+margin)
-                        .attr('y', y+(type_size.height/2)).attr("dy", ".35em").attr("text-anchor","start").text(d.desc);
-
-            node_type[d.name] = {
-                color:color_array[i],
-                desc:d.desc
-            }
-        })
-    }
-
-    function getNodeType() {
-        return types;
-    }
-
     function reload(data) {
         var me = this;
         activeNodes = [];
@@ -463,11 +427,27 @@ common.view = (function() {
     }
 
     return {
+        setRealTimeData: function(data) {
+            console.log(data);
+            var node = activeNodes.find(function(d) {
+                return d.id === data.id
+            });
+            //data.name = node.name;
+            node["detail"] = data;
+            // if(parseFloat(data.Open) < parseFloat(data.Close)) {
+            //     node.status = 1;
+            // } else if(parseFloat(data.Open) > parseFloat(data.Close)) {
+            //     node.status = -1;
+            // } else {
+            //     node.status = 0;
+            // }
+            redraw();
+        },
         setAlarm:function(items) {
             _.each(activeNodes, function(node, i) {
                 if(items[node.id]) {
                     node["x"] = -node["x"];
-                    //node["y"] += node["y"] * items[node.id];
+                    // node["y"] += node["y"] * items[node.id];
                 }
             })
             redraw();
@@ -533,7 +513,7 @@ common.view = (function() {
                 root["y"] = y;
                 activeNodes.push(root);
                 _.each(recommends, function(item,index) {
-                    item["x"] = x + node_size * (index + 1) * 6;
+                    item["x"] = x + node_size * (index + 1) * 10;
                     item["y"] = y;
                     var status = 0;
                     var prev_state;
@@ -598,7 +578,6 @@ common.view = (function() {
             lineGenerator = d3.line().curve(d3.curveCardinal);
             width = container_div.clientWidth;
             height = container_div.clientHeight;
-            console.log(types);
             zoom = d3.zoom().on("zoom", zoomed)
 
             function test() {
@@ -659,8 +638,6 @@ common.view = (function() {
                 .attr("opacity", ".5")
                 .call(yAxis);
 
-            node_types = outer.append('g').attr('class', 'node_types').attr("transform", function(d) { return "translate(" + 70 + "," + 70 + ")"; })
-
             addDrawDropShadow();
 
             common.events.on('onAddNode', addNodes)
@@ -669,8 +646,6 @@ common.view = (function() {
             redraw();
         },
         redraw : redraw,
-        setNodeType : setNodeType,
-        getNodeType : getNodeType,
         addNodes : addNodes,
         getNodes : getNodes,
         getLinks : getLinks,
@@ -678,7 +653,7 @@ common.view = (function() {
             outer.remove();
             width;
             height;
-            outer, vis, outer_background, link_group, node_types;
+            outer, vis, outer_background, link_group;
             x, y, xAxis, yAxis, gX, gY;
             node_size = 16;
             outer_transform = {
@@ -690,8 +665,6 @@ common.view = (function() {
             activeNodes = [];
             activeLinks = [];
             selected_id = "";
-
-            node_type = {};
 
             common.events.off('onAddNode', addNodes);
             common.events.off('view.focus_target', this.focus_target);

@@ -15,6 +15,11 @@
             </span>
         </div>
         <div style="flex:1 1 100%; "></div>
+        <div class="tool right" @click="onAlarm">
+            <span style="font-size:1.2em;">
+                <i :class="alarm ? 'far fa-bell' : 'far fa-bell-slash'"></i>
+            </span>
+        </div>
         <div class="tool right" v-on:click="onFullScreen">
             <span style="font-size:1.2em;">
                 <i class="fas fa-expand"></i>
@@ -48,13 +53,29 @@ export default {
             open:false,
             collapsed:true,
             collection_date:new Date(),
-            collection_status:'stop'
+            collection_status:'stop',
+            alarm:false
         }
     },
     components:{
         "sub-menu" :SubLeftMenuPanel
     },
     methods: {
+        onPublish(data) {
+            common.view.setRealTimeData(data);
+        },
+        onAlarm() {
+            this.alarm = !this.alarm;
+            if(this.alarm) {
+                common.socket.emit('subscribe', {module_name:'stock', options:{
+                    code_list:common.view.getNodes().filter(function(d) { return !d.type }).map(function(d) { return d.id })
+                }});
+                common.socket.on('publish', this.onPublish);
+            } else {
+                common.socket.emit('unsubscribe', {module_name:'stock'});
+                common.socket.off('publish', this.onPublish);
+            }
+        },
         onStartCollection() {
             var param = {name:'stock',command:this.collection_status == 'stop' ? 'start':'stop'};
             var data = {"broadcast":false,"target":"collection", "method":"execute", "parameters":param};

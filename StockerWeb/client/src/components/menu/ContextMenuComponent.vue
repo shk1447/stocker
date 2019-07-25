@@ -51,17 +51,27 @@ export default {
                         var analysis_date = moment(this.params.node_info.id).add(1, 'day').format("YYYY-MM-DD");
                         var nodes = common.view.getNodes();
                         var alarm_items = {};
+                        var super_test = [];
+                        var count = 0;
                         _.each(nodes, function(d,i) {
                             if(!d.type) {
                                 count++;
                                 api.getData(d.id, analysis_date).then(function(data) {
                                     var ad = common.chart.analysis(data, moment(me.params.node_info.id).format("YYYY-MM-DD"), d.supstance);
-                                    if(parseFloat(ad.prev_buy.props.last_resist) < ad.current.Low) {
-                                        //console.log(d.name, ad);
-                                        if(parseFloat(ad.prev_buy.props.last_support) < ad.current.Close) {
-                                            console.log(d.name, ' ', ad.prev_buy.props.last_support, '원에서 지지받았으면, ',
-                                            ad.current.props.last_resist, ' ~ ', ad.current.props.last_support, '원에서 매수해라!');
-                                        }
+                                    super_test.push({
+                                        name: d.name,
+                                        risk_per: ad.current.Close / ad.buy_price * 100,
+                                        volume_per : ad.trade_volume
+                                    });
+                                    //console.log(d.name, ' : ', ad.current.Close / ad.buy_price * 100 , '% , ', ad.trade_volume , '%');
+                                    count--;
+                                    if(count === 0) {
+                                        super_test.sort(function(a,b) {
+                                            return a.risk_per < b.risk_per ? -1 : a.risk_per > b.risk_per ? 1 : 0;
+                                        })
+                                        _.each(super_test, function(k) {
+                                            console.log(k.name, '/ risk :', k.risk_per, '%, money :', k.volume_per, '%');
+                                        })
                                     }
                                 })
                             }
