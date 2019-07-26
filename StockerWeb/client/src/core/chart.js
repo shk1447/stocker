@@ -50,9 +50,7 @@ common.chart = (function() {
         focus.select("g.y.axis").call(yAxis);
 
         if(options.signal) {
-            if(type === 'price') {
-                focus.selectAll("g.supstances").datum(supstanceData).call(supstance).call(supstance.drag).call(supstances_type);
-            }
+            focus.selectAll("g.supstances").datum(supstanceData).call(supstance).call(supstance.drag).call(supstances_type);
             focus.selectAll("g.tradearrow").datum(trades).call(tradearrow);
         }
 
@@ -63,6 +61,28 @@ common.chart = (function() {
         // Logic to ensure that at least +KijunSen displacement is applied to display cloud plotted ahead of ohlc
         // x.zoomable().clamp(false).domain([indicatorPreRoll, data.length+ichimokuIndicator.kijunSen()]);
         focus.selectAll("g.ichimoku").datum(ichimokuData).call(ichimoku);
+    }
+
+    function hogaCalc(value) {
+        var hoga_gap;
+        if(value >= 500000) {
+            hoga_gap = 1000;
+        } else if(value >= 100000) {
+            hoga_gap = 500;
+        } else if(value >= 50000) {
+            hoga_gap = 100;
+        } else if(value >= 10000) {
+            hoga_gap = 50;
+        } else if(value >= 5000) {
+            hoga_gap = 10;
+        } else if(value >= 1000) {
+            hoga_gap = 5;
+        } else {
+            hoga_gap = 1;
+        }
+        var remain_money = value % hoga_gap;
+        value = value - remain_money;
+        return value;
     }
 
     function load(data, end_date, supstance) {
@@ -83,12 +103,37 @@ common.chart = (function() {
         
         var end_date = end_date ? new Date(end_date) : new Date();
 
+        var cross_lines = [];
         data = data.filter(function(d) { return moment(d.unixtime).format("YYYY-MM-DD") <= moment(end_date).format("YYYY-MM-DD") });
 
-        data = data.map(function(d) {
+        var max_obj = data.reduce(function(prev, curr) { return prev.High > curr.High ? prev : curr});
+        var min_obj = data.reduce(function(prev, curr) { return prev.Low < curr.Low ? prev : curr});
+        var max_idx = data.indexOf(max_obj);
+        var min_idx = data.indexOf(min_obj);
+        
+        if(max_idx > min_idx) {
+            // 상승중
+            
+        } else {
+            // 하락중
+        }
+        console.log(max_idx);
+        console.log(min_idx);
+        data = data.map(function(d, k) {
             d.props = JSON.parse(d.props);
             if(d.props["지지가격대"]) {
                 d.props["cross"] = d.props["지지가격대"].split(",");
+            }
+            if(k > (max_idx > min_idx ? max_idx : min_idx)) {
+                if(d.props.cross) {
+                    _.each(d.props.cross, function(cross,i) {
+                        var cross_price = hogaCalc(parseFloat(cross));
+                        if(!cross_lines.includes(cross_price)) {
+                            cross_lines.push(cross_price)
+                        }
+                        //supstanceData.push({value:parseFloat(cross), type:'cross'});
+                    })
+                }
             }
 
             if(moment(d.unixtime).format("YYYY-MM-DD") === moment(end_date).format("YYYY-MM-DD")) {
@@ -97,55 +142,40 @@ common.chart = (function() {
                         supstanceData.push({value:parseFloat(cross), type:'cross'});
                     })
                 }
-                supstanceData.push({value:Math.floor(d.props.last_support), type:'support'})
-                supstanceData.push({value:Math.floor(d.props.last_resist), type:'regist'})
+                if(type === 'price') {
+                    supstanceData.push({value:Math.floor(d.props.last_support), type:'support'})
+                    supstanceData.push({value:Math.floor(d.props.last_resist), type:'regist'})
+                }
             }
 
             if(prev_datum) {
-                if(d.total_state && moment(end_date).add(1,'day') >= new Date(d.unixtime)) {
-                    if(prev_datum.current_state === '하락' && d.current_state === '상승' && parseInt(d.props["최근갯수"]) < 2) {
-                        prev_buy_signal = buy_signal;
+                if(type === 'price') {
+                    if(d.total_state && moment(end_date).add(1,'day') >= new Date(d.unixtime)) {
+                        if(prev_datum.current_state === '하락' && d.current_state === '상승' && parseInt(d.props["최근갯수"]) < 2) {
+                            prev_buy_signal = buy_signal;
+                            
+                            if(parseFloat(prev_datum.props.last_resist) >= prev_datum.Low && parseFloat(d.props.last_resist) <= d.Close) {
+                                trades.push({date:parseDate(d.unixtime), type:'buy', price:d.Low, volume:d.Volume, quantity:1});
+                                buy_signal = d;
+                            }
+                        }
                         
-                        if(parseFloat(prev_datum.props.last_resist) >= prev_datum.Low && parseFloat(d.props.last_resist) <= d.Close) {
-                            trades.push({date:parseDate(d.unixtime), type:'buy', price:d.Low, volume:d.Volume, quantity:1});
-                            buy_signal = d;
+                        if(prev_datum.current_state === '상승' && d.current_state === '하락' && parseInt(d.props["최근갯수"]) < 2) {
+                            prev_sell_signal = sell_signal;
+    
+                            if(parseFloat(prev_datum.props.last_support) <= prev_datum.High && parseFloat(d.props.last_support) >= d.Close) {
+                                trades.push({date:parseDate(d.unixtime), type:'sell', price:d.High, volume:d.Volume, quantity:1});
+                                sell_signal = d;
+                            }
                         }
                     }
-                    
-                    if(prev_datum.current_state === '상승' && d.current_state === '하락' && parseInt(d.props["최근갯수"]) < 2) {
-                        prev_sell_signal = sell_signal;
-
-                        if(parseFloat(prev_datum.props.last_support) <= prev_datum.High && parseFloat(d.props.last_support) >= d.Close) {
-                            trades.push({date:parseDate(d.unixtime), type:'sell', price:d.High, volume:d.Volume, quantity:1});
-                            sell_signal = d;
+                } else if(type === 'resist') {
+                    if(parseFloat(prev_datum.props.last_resist) > prev_datum.Close && parseFloat(d.props.last_resist) < d.Close) {
+                        if(parseFloat(prev_datum.props.last_resist) - parseFloat(d.props.last_resist) > 0 &&
+                        prev_datum.Close - d.Close < 0) {
+                            trades.push({date:parseDate(d.unixtime), type:'buy', price:parseFloat(d.props.last_resist), volume:d.Volume, quantity:1});
                         }
                     }
-                    // if(prev_datum.current_state === '하락' && d.current_state === '상승' && parseInt(d.props["최근갯수"]) < 2) {
-                    //     prev_buy_signal = buy_signal;
-                        
-                    //     // 하락 중 발생신호 탐색
-                    //     if(parseFloat(d.props.resists) >= parseFloat(d.props.supports)) {
-                    //         if(parseFloat(d.props.supports) < d.support_count) {
-                    //             trades.push({date:parseDate(d.unixtime), type:'buy-pending', price:d.Low, volume:d.Volume, quantity:1});
-                    //             buy_signal = d;
-                    //         }
-                    //     }
-                    //     // 상승 중 발생신호 탐색
-                    //     if(d.support_count <= d.regist_count) {
-                    //         if(parseFloat(d.props.supports) > parseFloat(d.props.resists)) {
-                    //             trades.push({date:parseDate(d.unixtime), type:'buy', price:d.Low, volume:d.Volume, quantity:1});
-                    //             buy_signal = d;
-                    //         }
-                    //     }
-                        
-                    //     if(prev_datum.current_state === '상승' && d.current_state === '하락' && parseInt(d.props["최근갯수"]) < 2) {
-                    //         prev_sell_signal = sell_signal;
-                    //         if(parseFloat(d.props.supports) >= parseFloat(d.props.resists)) {
-                    //             trades.push({date:parseDate(d.unixtime), type:'sell', price:d.High, volume:d.Volume, quantity:1});
-                    //             sell_signal = d;
-                    //         }
-                    //     }
-                    // }
                 }
             }
             var result_data;
@@ -161,25 +191,27 @@ common.chart = (function() {
             } else if(type === 'resist') {
                 result_data = {
                     date: parseDate(d.unixtime),
-                    open: parseFloat(d.props.last_resist),
-                    high: parseFloat(d.props.last_resist),
-                    low: parseFloat(d.props.last_resist),
-                    close: parseFloat(d.props.last_resist),
+                    open: parseFloat(d.props.last_resist) > 0 ? parseFloat(d.props.last_resist) : +d.Close,
+                    high: parseFloat(d.props.last_resist) > 0 ? parseFloat(d.props.last_resist) : +d.Close,
+                    low: parseFloat(d.props.last_resist) > 0 ? parseFloat(d.props.last_resist) : +d.Close,
+                    close: d.Open === 0 ? d.Close : +d.Close,
                     volume: d.Open === 0 ? d.Close : +d.Volume
                 };
             } else {
                 result_data = {
                     date: parseDate(d.unixtime),
-                    open: parseFloat(d.props.last_support),
-                    high: parseFloat(d.props.last_support),
-                    low: parseFloat(d.props.last_support),
-                    close: prev_datum ? parseFloat(prev_datum.props.last_support) : parseFloat(d.props.last_support),
+                    open: parseFloat(d.props.last_support) > 0 ? parseFloat(d.props.last_support) : +d.Close,
+                    high: parseFloat(d.props.last_support) > 0 ? parseFloat(d.props.last_support) : +d.Close,
+                    low: parseFloat(d.props.last_support) > 0 ? parseFloat(d.props.last_support) : +d.Close,
+                    close: d.Open === 0 ? d.Close : +d.Close,
                     volume: d.Open === 0 ? d.Close : +d.Volume
                 };
             }
             prev_datum = d;
             return result_data;
-        }).sort(function(a, b) { return d3.ascending(accessor.d(a), accessor.d(b)); });        
+        }).sort(function(a, b) { return d3.ascending(accessor.d(a), accessor.d(b)); });
+
+        console.log(cross_lines.length);
 
         x.domain(data.map(accessor.d));
         x2.domain(x.domain());
