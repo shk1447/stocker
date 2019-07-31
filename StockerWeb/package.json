@@ -9,6 +9,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@tensorflow/tfjs": "^1.2.5",
+    "@tensorflow/tfjs-node": "^1.2.5",
+    "@tensorflow/tfjs-node-gpu": "^1.2.5",
     "axios": "^0.18.0",
     "body-parser": "^1.18.3",
     "cheerio": "^1.0.0-rc.2",
@@ -40,6 +43,7 @@
     "pg": "^7.5.0",
     "request": "^2.88.0",
     "socket.io": "^2.1.1",
+    "systeminformation": "^4.14.4",
     "winston": "^3.1.0",
     "winston-daily-rotate-file": "^3.3.3",
     "ws": "^6.2.1"

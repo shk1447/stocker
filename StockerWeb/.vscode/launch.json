@@ -20,6 +20,23 @@
                 "--nolazy"
             ],
             "autoAttachChildProcesses": true
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "분석 시작",
+            "program": "${workspaceFolder}\\analysis.js",
+            "stopOnEntry": false,
+            "args": [
+                "--mode",
+                "development"
+            ],
+            "cwd": "${workspaceRoot}",
+            "runtimeExecutable": null,
+            "runtimeArgs": [
+                "--nolazy"
+            ],
+            "autoAttachChildProcesses": true
         }
     ]
 }

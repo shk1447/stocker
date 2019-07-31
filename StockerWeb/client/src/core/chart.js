@@ -211,7 +211,7 @@ common.chart = (function() {
             return result_data;
         }).sort(function(a, b) { return d3.ascending(accessor.d(a), accessor.d(b)); });
 
-        console.log(cross_lines.length);
+        console.log(cross_lines);
 
         x.domain(data.map(accessor.d));
         x2.domain(x.domain());
