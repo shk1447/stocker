@@ -2,6 +2,7 @@ const _ = require('lodash');
 const moment = require('moment');
 
 common.chart = (function() {
+    var chart_data;
     var type = 'price';
     var isIchimoku = false;
     function canvasContextMenu() {
@@ -155,7 +156,7 @@ common.chart = (function() {
                             prev_buy_signal = buy_signal;
                             
                             if(parseFloat(prev_datum.props.last_resist) >= prev_datum.Low && parseFloat(d.props.last_resist) <= d.Close) {
-                                trades.push({date:parseDate(d.unixtime), type:'buy', price:d.Low, volume:d.Volume, quantity:1});
+                                trades.push({date:parseDate(d.unixtime), type:'buy', price:d.Low, volume:d.Volume, quantity:1, idx:k});
                                 buy_signal = d;
                             }
                         }
@@ -164,7 +165,7 @@ common.chart = (function() {
                             prev_sell_signal = sell_signal;
     
                             if(parseFloat(prev_datum.props.last_support) <= prev_datum.High && parseFloat(d.props.last_support) >= d.Close) {
-                                trades.push({date:parseDate(d.unixtime), type:'sell', price:d.High, volume:d.Volume, quantity:1});
+                                trades.push({date:parseDate(d.unixtime), type:'sell', price:d.High, volume:d.Volume, quantity:1, idx:k});
                                 sell_signal = d;
                             }
                         }
@@ -211,7 +212,7 @@ common.chart = (function() {
             return result_data;
         }).sort(function(a, b) { return d3.ascending(accessor.d(a), accessor.d(b)); });
 
-        console.log(cross_lines);
+        chart_data = data;
 
         x.domain(data.map(accessor.d));
         x2.domain(x.domain());
@@ -362,6 +363,12 @@ common.chart = (function() {
 
             // zoomable.domain(zoomable2.domain());
             draw();
+        },
+        getData: function() {
+            return chart_data;
+        },
+        getTrades: function() {
+            return trades;
         },
         getSupstances: function() {
             return supstanceData;

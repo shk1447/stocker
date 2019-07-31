@@ -23,6 +23,11 @@
             </el-date-picker>
         </div>
         <div class="tool right">
+            <span style="font-size:1.2em;" @click="onTrain">
+                TRAIN
+            </span>
+        </div>
+        <div class="tool right">
             <span style="font-size:1.2em;" @click="onPrice">
                 PRICE
             </span>
@@ -75,9 +80,12 @@
 
 <script>
 
+import * as tf from '@tensorflow/tfjs';
 import moment from 'moment';
 import api from '../../api/api.js';
 import { setTimeout } from 'timers';
+// import { func } from '@tensorflow/tfjs-data';
+// import { constants } from 'fs';
 
 export default {
     data () {
@@ -99,6 +107,115 @@ export default {
         
     },
     methods: {
+        onTrain() {
+            var data = common.chart.getTrades().filter(function(t) {
+                return t.type === 'buy';
+            });
+
+            const values = data.map(function(d,i) {
+                return {
+                    x:d.idx,
+                    y:d.price
+                }
+            })
+
+            const model = tf.sequential();
+            model.add(tf.layers.dense({inputShape:[1], units:1, useBias:true}));
+            model.add(tf.layers.dense({units: 50, activation:'sigmoid'}));
+            model.add(tf.layers.dense({units: 1, useBias: true}));
+            function convertToTensor(data) {
+                // Wrapping these calculations in a tidy will dispose any 
+                // intermediate tensors.
+
+                return tf.tidy(() => {
+                    // Step 1. Shuffle the data    
+                    tf.util.shuffle(data);
+
+                    // Step 2. Convert data to Tensor
+                    const inputs = data.map(d => d.idx)
+                    const labels = data.map(d => d.price);
+
+                    const inputTensor = tf.tensor2d(inputs, [inputs.length, 1]);
+                    const labelTensor = tf.tensor2d(labels, [labels.length, 1]);
+
+                    //Step 3. Normalize the data to the range 0 - 1 using min-max scaling
+                    const inputMax = inputTensor.max();
+                    const inputMin = inputTensor.min();  
+                    const labelMax = labelTensor.max();
+                    const labelMin = labelTensor.min();
+
+                    const normalizedInputs = inputTensor.sub(inputMin).div(inputMax.sub(inputMin));
+                    const normalizedLabels = labelTensor.sub(labelMin).div(labelMax.sub(labelMin));
+
+                    return {
+                        inputs: normalizedInputs,
+                        labels: normalizedLabels,
+                        // Return the min/max bounds so we can use them later.
+                        inputMax,
+                        inputMin,
+                        labelMax,
+                        labelMin,
+                    }
+                });  
+            }
+
+            function trainModel(model, inputs, labels) {
+                // Prepare the model for training.  
+                model.compile({
+                    optimizer: tf.train.adam(),
+                    loss: tf.losses.meanSquaredError,
+                    metrics: ['mse'],
+                });
+                
+                const batchSize = 32;
+                const epochs = 50;
+                
+                return model.fit(inputs, labels, {
+                    batchSize,
+                    epochs,
+                    shuffle: true
+                })
+            }
+
+            const tensorData = convertToTensor(data);
+            const {inputs, labels} = tensorData;
+
+            function testModel(model, inputData, normalizationData) {
+                const {inputMax, inputMin, labelMin, labelMax} = normalizationData;  
+                
+                // Generate predictions for a uniform range of numbers between 0 and 1;
+                // We un-normalize the data by doing the inverse of the min-max scaling 
+                // that we did earlier.
+                const [xs, preds] = tf.tidy(() => {
+                    
+                    const xs = tf.linspace(0, 1, 100);      
+                    const preds = model.predict(xs.reshape([100, 1]));      
+                    
+                    const unNormXs = xs
+                    .mul(inputMax.sub(inputMin))
+                    .add(inputMin);
+                    
+                    const unNormPreds = preds
+                    .mul(labelMax.sub(labelMin))
+                    .add(labelMin);
+                    
+                    // Un-normalize the data
+                    return [unNormXs.dataSync(), unNormPreds.dataSync()];
+                });
+                
+                
+                const predictedPoints = Array.from(xs).map((val, i) => {
+                    return {x: val, y: preds[i]}
+                });               
+                
+                console.log(predictedPoints);
+            }
+
+            trainModel(model, inputs, labels).then(function(msg) {
+                console.log('Done Training!', msg);
+                testModel(model, data, tensorData);
+            })
+        },
         onPrice() {
             this.data_type = 'price';
             this.refresh();
