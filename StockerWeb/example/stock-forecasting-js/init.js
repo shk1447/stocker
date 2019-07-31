@@ -743,7 +743,7 @@ $('#trainbutton').click(function(){
         var chart_line = echarts.init(document.getElementById('div_loss'));
         chart_line.setOption(option,true);
         if (i < (epoch-1)) {
-          setTimeout(function() {loop(++i)}, 2000);
+          setTimeout(function() {loop(++i)}, 1000);
         } else {
           callback();
         }

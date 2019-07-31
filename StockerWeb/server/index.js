@@ -99,9 +99,9 @@ module.exports = function(config) {
 
                 server.listen(port,'0.0.0.0', function(){
                     khan.logger.info(me.name + ' starting worker thread #' + cluster.worker.id);
-                    // if(cluster.worker.id === me.cpus) {
-                    //     require('opener')("http://localhost:" + port);
-                    // }
+                    if(cluster.worker.id === me.cpus) {
+                        require('opener')("http://localhost:" + port);
+                    }
                 }).on('error', function(err){
                     khan.logger.error(err.message);
                 })

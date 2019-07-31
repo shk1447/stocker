@@ -1,5 +1,6 @@
-const moment = require('moment');
 const _ = require('lodash');
+const moment = require('moment');
+
 var instance;
 function PastStock() {
     this.table_name = 'past_stock';
@@ -66,8 +67,12 @@ function PastStock() {
     }
 }
 
-PastStock.prototype.selectByCategory = function(param) {
-    return khan.database(this.table_name).select(khan.database.raw('category, column_json(rawdata) as rawdata, unixtime')).where({category:param});
+PastStock.prototype.selectByCategory = function(params) {
+    var query = khan.database(this.table_name).select(khan.database.raw('category, column_json(rawdata) as rawdata, unixtime'));
+    _.each(params, (v,i) => {
+        query.andWhere(v.key, v.condition, v.value);
+    });
+    return query;
 };
 
 PastStock.prototype.selectDaily = function() {
