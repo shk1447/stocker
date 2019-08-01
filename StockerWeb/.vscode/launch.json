@@ -35,8 +35,7 @@
             "runtimeExecutable": null,
             "runtimeArgs": [
                 "--nolazy"
-            ],
-            "autoAttachChildProcesses": true
+            ]
         }
     ]
 }
