@@ -399,15 +399,12 @@ namespace Finance
 
                     if (sise.ContainsKey("종가"))
                     {
+                        var analysis_sise = StockAnalysis.Instance.AutoAnalysis("day", code, siseUnix, sise);
+                        result.rawdata.Add(analysis_sise);
                         Task.Factory.StartNew(() =>
                         {
-                            var analysis_sise = StockAnalysis.Instance.AutoAnalysis("day", code, siseUnix, sise);
-                            result.rawdata.Add(analysis_sise);
-                            Task.Factory.StartNew(() =>
-                            {
-                                var setSourceQuery = MariaQueryBuilder.SetDataSource(result);
-                                MariaDBConnector.Instance.SetQuery("DynamicQueryExecuter", setSourceQuery);
-                            });
+                            var setSourceQuery = MariaQueryBuilder.SetDataSource(result);
+                            MariaDBConnector.Instance.SetQuery("DynamicQueryExecuter", setSourceQuery);
                         });
                     }
                 }
