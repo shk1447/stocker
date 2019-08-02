@@ -2,6 +2,7 @@ var _ = require('lodash');
 var fs = require('fs');
 var path = require('path');
 var fsPath = require('fs-path');
+var moment = require('moment');
 
 module.exports = {
     get : {
@@ -28,11 +29,28 @@ module.exports = {
             })
         },
         "data" : function(req,res,next) {
-            khan.model.past_stock.selectData(req.query.id, req.query.to_date).then((data) => {
-                res.status(200).send(data);
-            }).catch((err) => {
-                res.status(500).send(err);
+            var csv = {
+                volume : [],
+                data : [],
+                date : []
+            }
+            khan.model.past_stock.selectByCategory([{key:'category',condition:'=',value:req.query.id},{key:'unixtime',condition:'<=',value:req.query.to_date}])
+            .map((row) => {
+                row.rawdata = JSON.parse(row.rawdata);
+                csv.volume.push(parseFloat(row.rawdata["거래량"]));
+                csv.date.push(moment(row.unixtime).format('YYYY-MM-DD'));
+                csv.data.push([parseFloat(row.rawdata["시가"]),
+                parseFloat(row.rawdata["종가"]),
+                parseFloat(row.rawdata["저가"]),
+                parseFloat(row.rawdata["고가"])]);
+                
+                return row;
+            }).then((data) => {
+                res.status(200).send(csv);
             })
+        },
+        "analysis": function(req,res,next) {
+            res.status(200).send()
         }
     },
     post: {

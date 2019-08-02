@@ -35,6 +35,13 @@ import router from './router';
 
 import './core';
 
+// to use echart
+import ECharts from 'vue-echarts'
+import 'echarts/lib/chart/candlestick';
+import 'echarts/lib/component/tooltip';
+import 'echarts-gl';
+Vue.component('v-chart', ECharts)
+
 window.onbeforeunload = function(e){
   console.log('before unload')
   common.socket.disconnect();

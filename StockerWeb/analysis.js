@@ -1,8 +1,9 @@
 const _ = require('lodash');
 const si = require('systeminformation');
+const knex = require('knex');
+
 const tf = require('@tensorflow/tfjs')
 const nj = require('numjs');
-const knex = require('knex');
 require('@tensorflow/tfjs-node');
 require('@tensorflow/tfjs-node-gpu');
 
@@ -65,11 +66,11 @@ khan.model.past_stock.selectByCategory([{key:'category',condition:'=',value:'085
     var volume = csv.volume;
 
     var minmax_scaled = utils.minmax_1d(close)
-    var timestamp = 10;
-    var epoch = 50;
+    var timestamp = 20;
+    var epoch = 30;
     var future = 20;
     var layer_size = 32;
-    var learning_rate = 0.01;
+    var learning_rate = 0.0;
     var smooth = 0.1;
     var X_scaled = minmax_scaled.scaled.slice([0], [Math.floor(minmax_scaled.scaled.shape[0]/timestamp)*timestamp+1])
 
@@ -95,7 +96,7 @@ khan.model.past_stock.selectByCategory([{key:'category',condition:'=',value:'085
     var arr_loss = [];
     var arr_layer = [];
 
-    var learning_result = {};
+    var learning_result = [];
 
     function async_training_loop(callback) {
         (function loop(i) {
@@ -146,10 +147,11 @@ khan.model.past_stock.selectByCategory([{key:'category',condition:'=',value:'085
             var predicted_val = utils.tf_nj_list_flatten(utils.reverse_minmax_1d(tf.tensor(tensor_output_predict),minmax_scaled['min'],minmax_scaled['max']));
             var predicted_val = utils.smoothing_line(predicted_val,smooth);
             console.log('Predict Result :', predicted_val.length);
-            learning_result["epoch"+i+1] = {
+            learning_result.push({
+                id:"epoch"+(i+1),
                 loss:total_loss,
                 predicted: predicted_val
-            }
+            });
 
             if(i < (epoch - 1)) {
                 loop(++i)
@@ -162,7 +164,9 @@ khan.model.past_stock.selectByCategory([{key:'category',condition:'=',value:'085
 
     async_training_loop(function(predicted) {
         console.log('Done Training');
-        console.log(predicted[predicted.length-1] + '원')
+        console.log(predicted[predicted.length-1] + '원');
+        var min_loss = learning_result.reduce(function(prev, curr) { return prev.loss < curr.loss ? prev : curr});
+        console.log(min_loss.predicted[min_loss.predicted.length-1] + '원');
     })
 
     //console.log(Math.floor(minmax_scaled.scaled.shape[0]/timestamp)*timestamp+1);

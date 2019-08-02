@@ -74,6 +74,7 @@
     <div id="sidebar" ref="sidebar"></div>
     <div id="sidebar-separator" class="ui-draggable"></div>
     <div id="chart-space" ref="chart_space">
+        <v-chart ref="echart" :options="chart_options"/>
     </div>
 </div>
 </template>
@@ -84,12 +85,14 @@ import * as tf from '@tensorflow/tfjs';
 import moment from 'moment';
 import api from '../../api/api.js';
 import { setTimeout } from 'timers';
+import echarts from 'echarts';
 // import { func } from '@tensorflow/tfjs-data';
 // import { constants } from 'fs';
 
 export default {
     data () {
         return {
+            chart_options:{},
             collapsed:true,
             open:true,
             selected_item:{
@@ -307,17 +310,251 @@ export default {
         refresh() {
             var me = this;
             setTimeout(function() {
-                common.chart.uninit('chart-space');
-                common.chart.init('chart-space', {signal:me.signal,type:me.data_type});
+                // common.chart.uninit('chart-space');
+                // common.chart.init('chart-space', {signal:me.signal,type:me.data_type});
                 var to_date = moment(me.end_date).add(1, 'day').format("YYYY-MM-DD")
                 api.getData(me.selected_item.category,to_date).then(function(data) {
-                    var supstance = []
-                    if(me.selected_item.supstance) {
-                        supstance = me.selected_item.supstance.split(',');
-                    }
-                    common.chart.load(data, me.end_date, supstance);
+                    //me.$refs.echart.options
+                    // var supstance = []
+                    // if(me.selected_item.supstance) {
+                    //     supstance = me.selected_item.supstance.split(',');
+                    // }
+                    // common.chart.load(data, me.end_date, supstance);
+                    me.setOptions(data);
                 })
             },400)
+        },
+        calculateMA(dayCount, data) {
+            var result = [];
+            for (var i = 0, len = data.length; i < len; i++) {
+                if (i < dayCount) {
+                result.push('-');
+                continue;
+                }
+                var sum = 0;
+                for (var j = 0; j < dayCount; j++) {
+                sum += data[i - j][1];
+                }
+                result.push((sum / dayCount).toFixed(2));
+            }
+            return result;
+        },
+        setOptions(stocks) {
+            var me = this;
+            var color_list = ['#c23531','#2f4554', '#61a0a8', '#d48265', '#91c7ae','#749f83',  '#ca8622', '#bda29a','#6e7074', '#546570', '#c4ccd3'];
+            var dataMA5 = this.calculateMA(5, stocks.data);
+            var dataMA10 = this.calculateMA(10, stocks.data);
+            var dataMA20 = this.calculateMA(20, stocks.data);
+            var dataMA60 = this.calculateMA(60, stocks.data);
+            var option = {
+                animation: false,
+                color: color_list,
+                title: {
+                    left: 'center'
+                },
+                legend: {
+                    top: 30,
+                    data: ['STOCK', 'MA5', 'MA10', 'MA20', 'MA60']
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    position: function (pt) {
+                        return [pt[0], '10%'];
+                    }
+                },
+                axisPointer: {
+                    link: [{
+                        xAxisIndex: [0, 1]
+                    }]
+                },
+                dataZoom: [{
+                    type: 'slider',
+                    xAxisIndex: [0, 1],
+                    realtime: false,
+                    start: 0,
+                    end: 100,
+                    top: 65,
+                    height: 20,
+                    handleIcon: 'M10.7,11.9H9.3c-4.9,0.3-8.8,4.4-8.8,9.4c0,5,3.9,9.1,8.8,9.4h1.3c4.9-0.3,8.8-4.4,8.8-9.4C19.5,16.3,15.6,12.2,10.7,11.9z M13.3,24.4H6.7V23h6.6V24.4z M13.3,19.6H6.7v-1.4h6.6V19.6z',
+                    handleSize: '120%'
+                    }, {
+                    type: 'inside',
+                    xAxisIndex: [0, 1],
+                    start: 40,
+                    end: 70,
+                    top: 30,
+                    height: 20
+                }],
+                xAxis: [{
+                    type: 'category',
+                    data: stocks.date,
+                    boundaryGap : false,
+                    axisLine: { lineStyle: { color: '#777' } },
+                    axisLabel: {
+                        formatter: function (value) {
+                        return echarts.format.formatTime('MM-dd', value);
+                        }
+                    },
+                    min: 'dataMin',
+                    max: 'dataMax',
+                    axisPointer: {
+                        show: true
+                    }
+                    }, {
+                    type: 'category',
+                    gridIndex: 1,
+                    data: stocks.date,
+                    scale: true,
+                    boundaryGap : false,
+                    splitLine: {show: false},
+                    axisLabel: {show: false},
+                    axisTick: {show: false},
+                    axisLine: { lineStyle: { color: '#777' } },
+                    splitNumber: 20,
+                    min: 'dataMin',
+                    max: 'dataMax',
+                    axisPointer: {
+                        type: 'shadow',
+                        label: {show: false},
+                        triggerTooltip: true,
+                        handle: {
+                        show: true,
+                        margin: 30,
+                        color: '#B80C00'
+                        }
+                    }
+                }],
+                yAxis: [{
+                        scale: true,
+                        splitNumber: 2,
+                        axisLine: { lineStyle: { color: '#777' } },
+                        splitLine: { show: true },
+                        axisTick: { show: false },
+                        axisLabel: {
+                            inside: true,
+                            formatter: '{value}\n'
+                        }
+                        }, {
+                        scale: true,
+                        gridIndex: 1,
+                        splitNumber: 2,
+                        axisLabel: {show: false},
+                        axisLine: {show: false},
+                        axisTick: {show: false},
+                        splitLine: {show: false}
+                    }],
+                grid: [{
+                    left: 20,
+                    right: 30,
+                    top: 110,
+                    }, {
+                    left: 20,
+                    right: 30,
+                    top: 400
+                }],
+                graphic: [{
+                    type: 'group',
+                    left: 'center',
+                    top: 70,
+                    width: 300,
+                    bounding: 'raw',
+                    children: [{
+                        id: 'MA5',
+                        type: 'text',
+                        style: {fill: color_list[1]},
+                        left: 0
+                    }, {
+                        id: 'MA10',
+                        type: 'text',
+                        style: {fill: color_list[2]},
+                        left: 'center'
+                    }, {
+                        id: 'MA20',
+                        type: 'text',
+                        style: {fill: color_list[3]},
+                        right: 0
+                    }]
+                }],
+                series: [{
+                    name: 'Volume',
+                    type: 'bar',
+                    xAxisIndex: 1,
+                    yAxisIndex: 1,
+                    itemStyle: {
+                        normal: {
+                        color: '#7fbe9e'
+                        },
+                        emphasis: {
+                        color: '#140'
+                        }
+                    },
+                    data: stocks.volume
+                }, {
+                    type: 'candlestick',
+                    name: 'STOCK',
+                    data: stocks.data,
+                    itemStyle: {
+                        normal: {
+                        color: '#ef232a',
+                        color0: '#14b143',
+                        borderColor: '#ef232a',
+                        borderColor0: '#14b143'
+                        },
+                        emphasis: {
+                        color: 'black',
+                        color0: '#444',
+                        borderColor: 'black',
+                        borderColor0: '#444'
+                        }
+                    }
+                }, {
+                    name: 'MA5',
+                    type: 'line',
+                    data: dataMA5,
+                    smooth: true,
+                    showSymbol: false,
+                    lineStyle: {
+                        normal: {
+                        width: 1
+                        }
+                    }
+                }, {
+                    name: 'MA10',
+                    type: 'line',
+                    data: dataMA10,
+                    smooth: true,
+                    showSymbol: false,
+                    lineStyle: {
+                        normal: {
+                        width: 1
+                        }
+                    }
+                }, {
+                    name: 'MA20',
+                    type: 'line',
+                    data: dataMA20,
+                    smooth: true,
+                    showSymbol: false,
+                    lineStyle: {
+                        normal: {
+                        width: 1
+                        }
+                    }
+                },
+                {
+                    name: 'MA60',
+                    type: 'line',
+                    data: dataMA60,
+                    smooth: true,
+                    showSymbol: false,
+                    lineStyle: {
+                        normal: {
+                        width: 1
+                        }
+                    }
+                }]
+            };
+            me.chart_options = option;
         }
     },
     beforeCreate(){
@@ -371,7 +608,8 @@ export default {
                 if(me.selected_item.category) me.refresh();
             }
         });
-        common.chart.init('chart-space', {signal:this.signal});
+        console.log(me.$refs.echart);
+        //common.chart.init('chart-space', {signal:this.signal});
     },
     beforeUpdate() {
 
@@ -380,7 +618,7 @@ export default {
         
     },
     beforeDestroy() {
-        common.chart.uninit();
+        //common.chart.uninit();
     },
     destroyed() {
         console.log('destroyed')
@@ -446,6 +684,11 @@ export default {
     background: #ffffff;
     z-index:11;
     box-sizing: border-box;
+}
+
+.echarts {
+    width: 100% !important;
+    height: 100% !important;
 }
 
 </style>
