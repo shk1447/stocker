@@ -46,10 +46,11 @@ window.onbeforeunload = function(e){
   console.log('before unload')
   common.socket.disconnect();
 }
-
-new Vue({
-  el: '#app',
-  router,
-  components: { App },
-  template: '<App/>'
-})
+common.socket.connect().then(function(data) {
+  new Vue({
+    el: '#app',
+    router,
+    components: { App },
+    template: '<App/>'
+  })
+});

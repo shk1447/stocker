@@ -22,8 +22,9 @@ common.socket = (function() {
                 socket = io.connect({
                     path: '/socket.io',
                     transports: ['websocket'],
-                    secure: true,
+                    secure: false,
                 }).on('connected', function(data) {
+                    console.log('test');
                     me.isConnected = true;
                     resolve(data);
                 })

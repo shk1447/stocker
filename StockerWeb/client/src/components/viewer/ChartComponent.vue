@@ -16,6 +16,19 @@
         <div style="flex:1 1 100%; "></div>
         <div class="tool right">
             <el-date-picker class="picker-custom"
+            v-model="start_date"
+            type="date"
+            @change="onChangeDate"
+            placeholder="주가 분석날짜 선택">
+            </el-date-picker>
+        </div>
+        <div class="tool right">
+            <span style="font-size:1.2em;" >
+                ~
+            </span>
+        </div>
+        <div class="tool right">
+            <el-date-picker class="picker-custom"
             v-model="end_date"
             type="date"
             @change="onChangeDate"
@@ -23,28 +36,8 @@
             </el-date-picker>
         </div>
         <div class="tool right">
-            <span style="font-size:1.2em;" @click="onTrain">
-                TRAIN
-            </span>
-        </div>
-        <div class="tool right">
-            <span style="font-size:1.2em;" @click="onPrice">
-                PRICE
-            </span>
-        </div>
-        <div class="tool right">
-            <span style="font-size:1.2em;" @click="onResist">
-                RESIST
-            </span>
-        </div>
-        <div class="tool right">
-            <span style="font-size:1.2em;" @click="onSupport">
-                SUPPORT
-            </span>
-        </div>
-        <div class="tool right">
-            <span style="font-size:1.2em;" @click="onSetIchimoku">
-                일목균형표
+            <span style="font-size:1.2em;" @click="onPredict">
+                Predict
             </span>
         </div>
         <div class="tool right" @click="onAlarm">
@@ -74,7 +67,7 @@
     <div id="sidebar" ref="sidebar"></div>
     <div id="sidebar-separator" class="ui-draggable"></div>
     <div id="chart-space" ref="chart_space">
-        <v-chart ref="echart" :options="chart_options"/>
+        <v-chart ref="echart" :options="chart_options" :initOptions="init_options"/>
     </div>
 </div>
 </template>
@@ -86,13 +79,17 @@ import moment from 'moment';
 import api from '../../api/api.js';
 import { setTimeout } from 'timers';
 import echarts from 'echarts';
-// import { func } from '@tensorflow/tfjs-data';
-// import { constants } from 'fs';
 
 export default {
     data () {
         return {
-            chart_options:{},
+            origin_data:{},
+            init_options: {
+                animation: false
+            },
+            chart_options:{
+                animation: false
+            },
             collapsed:true,
             open:true,
             selected_item:{
@@ -103,6 +100,7 @@ export default {
             alarm:false,
             favorite:false,
             end_date:new Date(),
+            start_date:moment().add('day', -730),
             data_type:'price'
         }
     },
@@ -110,134 +108,14 @@ export default {
         
     },
     methods: {
-        onTrain() {
-            var data = common.chart.getTrades().filter(function(t) {
-                return t.type === 'buy';
-            });
-
-            const values = data.map(function(d,i) {
-                return {
-                    x:d.idx,
-                    y:d.price
-                }
-            })
-
-            const model = tf.sequential();
-            model.add(tf.layers.dense({inputShape:[1], units:1, useBias:true}));
-            model.add(tf.layers.dense({units: 50, activation:'sigmoid'}));
-            model.add(tf.layers.dense({units: 1, useBias: true}));
-            function convertToTensor(data) {
-                // Wrapping these calculations in a tidy will dispose any 
-                // intermediate tensors.
-
-                return tf.tidy(() => {
-                    // Step 1. Shuffle the data    
-                    tf.util.shuffle(data);
-
-                    // Step 2. Convert data to Tensor
-                    const inputs = data.map(d => d.idx)
-                    const labels = data.map(d => d.price);
-
-                    const inputTensor = tf.tensor2d(inputs, [inputs.length, 1]);
-                    const labelTensor = tf.tensor2d(labels, [labels.length, 1]);
-
-                    //Step 3. Normalize the data to the range 0 - 1 using min-max scaling
-                    const inputMax = inputTensor.max();
-                    const inputMin = inputTensor.min();  
-                    const labelMax = labelTensor.max();
-                    const labelMin = labelTensor.min();
-
-                    const normalizedInputs = inputTensor.sub(inputMin).div(inputMax.sub(inputMin));
-                    const normalizedLabels = labelTensor.sub(labelMin).div(labelMax.sub(labelMin));
-
-                    return {
-                        inputs: normalizedInputs,
-                        labels: normalizedLabels,
-                        // Return the min/max bounds so we can use them later.
-                        inputMax,
-                        inputMin,
-                        labelMax,
-                        labelMin,
-                    }
-                });  
-            }
-
-            function trainModel(model, inputs, labels) {
-                // Prepare the model for training.  
-                model.compile({
-                    optimizer: tf.train.adam(),
-                    loss: tf.losses.meanSquaredError,
-                    metrics: ['mse'],
-                });
-                
-                const batchSize = 32;
-                const epochs = 50;
-                
-                return model.fit(inputs, labels, {
-                    batchSize,
-                    epochs,
-                    shuffle: true
-                })
-            }
-
-            const tensorData = convertToTensor(data);
-            const {inputs, labels} = tensorData;
-
-            function testModel(model, inputData, normalizationData) {
-                const {inputMax, inputMin, labelMin, labelMax} = normalizationData;  
-                
-                // Generate predictions for a uniform range of numbers between 0 and 1;
-                // We un-normalize the data by doing the inverse of the min-max scaling 
-                // that we did earlier.
-                const [xs, preds] = tf.tidy(() => {
-                    
-                    const xs = tf.linspace(0, 1, 100);      
-                    const preds = model.predict(xs.reshape([100, 1]));      
-                    
-                    const unNormXs = xs
-                    .mul(inputMax.sub(inputMin))
-                    .add(inputMin);
-                    
-                    const unNormPreds = preds
-                    .mul(labelMax.sub(labelMin))
-                    .add(labelMin);
-                    
-                    // Un-normalize the data
-                    return [unNormXs.dataSync(), unNormPreds.dataSync()];
-                });
-                
-                
-                const predictedPoints = Array.from(xs).map((val, i) => {
-                    return {x: val, y: preds[i]}
-                });               
-                
-                console.log(predictedPoints);
-            }
-
-            trainModel(model, inputs, labels).then(function(msg) {
-                console.log('Done Training!', msg);
-                testModel(model, data, tensorData);
-            })
-        },
-        onPrice() {
-            this.data_type = 'price';
-            this.refresh();
-        },
-        onResist() {
-            this.data_type = 'resist';
-            this.refresh();
-        },
-        onSupport() {
-            this.data_type = 'support';
-            this.refresh();
+        onPredict() {
+            var me = this;
+            api.executePredict(me.origin_data).then(function() {
+                console.log('Predicting...')
+            });            
         },
         onChangeDate() {
             this.refresh();
-        },
-        onSetIchimoku() {
-            if(this.selected_item.category) {
-                common.chart.setIchimoku();
-            }
         },
         onSave() {
             if(this.selected_item.category) {
@@ -310,30 +188,151 @@ export default {
         refresh() {
             var me = this;
             setTimeout(function() {
-                // common.chart.uninit('chart-space');
-                // common.chart.init('chart-space', {signal:me.signal,type:me.data_type});
                 var to_date = moment(me.end_date).add(1, 'day').format("YYYY-MM-DD")
-                api.getData(me.selected_item.category,to_date).then(function(data) {
+                var from_date = moment(me.start_date).format("YYYY-MM-DD");
+                api.getData(me.selected_item.category,to_date, from_date).then(function(data) {
                     //me.$refs.echart.options
                     // var supstance = []
                     // if(me.selected_item.supstance) {
                     //     supstance = me.selected_item.supstance.split(',');
                     // }
                     // common.chart.load(data, me.end_date, supstance);
-                    me.setOptions(data);
+
+                    var golden_cross = [];
+                    var trades = [];
+                    var prev_datum;
+                    var buy_signal;
+                    var sell_signal;
+
+                    var box_range = {};
+                    var box_range2 = {}
+                    data = data.filter(function(d) { return moment(d.unixtime).format("YYYY-MM-DD") <= to_date });
+                    var csv = {
+                        volume : [],
+                        data : [],
+                        date : [],
+                        markpoints : [],
+                        markLines : []
+                    }
+                    data.map(function(d,k) {
+                        csv.volume.push(d.Volume);
+                        csv.date.push(moment(d.unixtime).format('YYYY-MM-DD'));
+                        csv.data.push([d.Open, d.Close, d.Low, d.High]);
+
+                        d.props = JSON.parse(d.props);
+                        if(d.props["지지가격대"]) {
+                            d.props["cross"] = d.props["지지가격대"].split(",");
+                        }
+
+                        if(prev_datum) {
+                            if(me.data_type === 'price') {
+                                if(d.total_state && moment(me.end_date).add(1,'day') >= new Date(d.unixtime)) {
+                                    var double_signal = false;
+                                    if(prev_datum.current_state === '하락' && d.current_state === '상승') {
+                                        if(parseInt(d.props["최근갯수"]) < 2 && parseInt(prev_datum.props["최근갯수"]) > 2) {
+                                            if(parseFloat(prev_datum.props.last_resist) > prev_datum.Close && parseFloat(d.props.last_resist) < d.Close) {
+                                                if(parseFloat(prev_datum.props.last_resist) - parseFloat(d.props.last_resist) > 0 && prev_datum.Close - d.Close < 0) {
+                                                    trades.push({name:'ready', value:'ready', xAxis:k, yAxis:d.High,itemStyle:{color:'#428688'}});
+                                                }
+                                            }
+                                            if(prev_datum.support_count - d.support_count < 0 && prev_datum.regist_count - d.regist_count > 0 && d.regist_count <= d.support_count) {
+                                                trades.push({name:'buy', value:'buy', xAxis:k, yAxis:d.High,itemStyle:{color:'#61a0a8'}});
+                                                buy_signal = d;
+                                                console.log(box_range.length);
+                                            }
+                                        }
+                                        box_range2 = d;
+                                    }
+
+                                    if(prev_datum.current_state === '상승' && d.current_state === '하락') {
+                                        box_range = d;
+                                    }
+
+                                    if(parseFloat(prev_datum.props.last_resist) > prev_datum.Close && parseFloat(d.props.last_resist) < d.Close) {
+                                        if(parseFloat(prev_datum.props.last_resist) - parseFloat(d.props.last_resist) > 0 && prev_datum.Close - d.Close < 0) {
+                                            //trades.push({name:'ready', value:'ready', xAxis:k, yAxis:d.High,itemStyle:{color:'#428688'}});
+                                            // if(double_signal) {
+                                            //     trades.push({name:'double', value:'double', xAxis:k, yAxis:d.High,itemStyle:{color:'#42861a'}});
+                                            // } else {
+                                            //     trades.push({name:'ready', value:'ready', xAxis:k, yAxis:d.High,itemStyle:{color:'#428688'}});
+                                            // }
+                                            //trades.push({date:d.unixtime, type:'buy', price:parseFloat(d.props.last_resist), volume:d.Volume, quantity:1});
+                                        }
+                                    }
+                                    
+                                    // if(prev_datum.current_state === '상승' && d.current_state === '하락' && parseInt(d.props["최근갯수"]) < 2) {                
+                                    //     if(prev_datum.support_count - d.support_count > 0 && prev_datum.regist_count - d.regist_count < 0) {
+                                    //         trades.push({name:'sell', value:'sell', xAxis:k, yAxis:d.High,itemStyle:{color:'#c23531'}});
+                                    //         sell_signal = d;
+                                    //     }
+                                    // }
+                                }
+                            } else if(me.data_type === 'resist') {
+                                if(parseFloat(prev_datum.props.last_resist) > prev_datum.Close && parseFloat(d.props.last_resist) < d.Close) {
+                                    if(parseFloat(prev_datum.props.last_resist) - parseFloat(d.props.last_resist) > 0 &&
+                                    prev_datum.Close - d.Close < 0 && d.current_state === '상승' && parseInt(d.props["최근갯수"]) < 2) {
+                                        trades.push({name:'buy', value:'buy', xAxis:k, yAxis:d.High,itemStyle:{color:'#61a0a8'}});
+                                        //trades.push({date:d.unixtime, type:'buy', price:parseFloat(d.props.last_resist), volume:d.Volume, quantity:1});
+                                    }
+                                }
+
+                                if(parseFloat(prev_datum.props.last_support) < prev_datum.Close && parseFloat(d.props.last_support) > d.Close) {
+                                    if(parseFloat(prev_datum.props.last_support) - parseFloat(d.props.last_support) < 0 &&
+                                    prev_datum.Close - d.Close < 0 && parseInt(d.props["최근갯수"]) < 3) {
+                                        trades.push({name:'sell', value:'sell', xAxis:k, yAxis:d.High,itemStyle:{color:'#c23531'}});
+                                        //trades.push({date:d.unixtime, type:'buy', price:parseFloat(d.props.last_resist), volume:d.Volume, quantity:1});
+                                    }
+                                }
+                            }
+                        }
+                        
+                        prev_datum = d;
+                    })
+                    console.log(golden_cross);
+                    csv.markpoints = trades;
+                    csv.markLines.push({
+                        name:'last_resist',
+                        yAxis:parseFloat(box_range.props.last_resist),
+                        itemStyle: {
+                            normal: {color: 'rgb(50,50,200)'}
+                        }
+                    })
+                    csv.markLines.push({
+                        name:'last_support',
+                        yAxis:parseFloat(box_range.props.last_support),
+                        itemStyle: {
+                            normal: {color: 'rgb(50,50,200)'}
+                        }
+                    })
+                    csv.markLines.push({
+                        name:'last_resist',
+                        yAxis:parseFloat(box_range2.props.last_resist),
+                        itemStyle: {
+                            normal: {color: 'rgb(200,50,50)'}
+                        }
+                    })
+                    csv.markLines.push({
+                        name:'last_support',
+                        yAxis:parseFloat(box_range2.props.last_support),
+                        itemStyle: {
+                            normal: {color: 'rgb(200,50,50)'}
+                        }
+                    })
+                    me.origin_data = csv;
+                    me.setOptions(csv);
                 })
-            },400)
+            },0)
         },
         calculateMA(dayCount, data) {
             var result = [];
             for (var i = 0, len = data.length; i < len; i++) {
                 if (i < dayCount) {
-                result.push('-');
-                continue;
+                    result.push('-');
+                    continue;
                 }
                 var sum = 0;
                 for (var j = 0; j < dayCount; j++) {
-                sum += data[i - j][1];
+                    sum += data[i - j][1];
                 }
                 result.push((sum / dayCount).toFixed(2));
             }
@@ -342,8 +341,8 @@ export default {
         setOptions(stocks) {
             var me = this;
             var color_list = ['#c23531','#2f4554', '#61a0a8', '#d48265', '#91c7ae','#749f83',  '#ca8622', '#bda29a','#6e7074', '#546570', '#c4ccd3'];
-            var dataMA5 = this.calculateMA(5, stocks.data);
-            var dataMA10 = this.calculateMA(10, stocks.data);
+            // var dataMA5 = this.calculateMA(5, stocks.data);
+            // var dataMA10 = this.calculateMA(10, stocks.data);
             var dataMA20 = this.calculateMA(20, stocks.data);
             var dataMA60 = this.calculateMA(60, stocks.data);
             var option = {
@@ -354,12 +353,13 @@ export default {
                 },
                 legend: {
                     top: 30,
-                    data: ['STOCK', 'MA5', 'MA10', 'MA20', 'MA60']
+                    data: ['STOCK', 'MA20', 'MA60', 'predicted']
                 },
                 tooltip: {
                     trigger: 'axis',
-                    position: function (pt) {
-                        return [pt[0], '10%'];
+                    axisPointer: {
+                        animation: false,
+                        type: 'cross'
                     }
                 },
                 axisPointer: {
@@ -437,6 +437,7 @@ export default {
                         }, {
                         scale: true,
                         gridIndex: 1,
+                        position:'right',
                         splitNumber: 2,
                         axisLabel: {show: false},
                         axisLine: {show: false},
@@ -482,10 +483,7 @@ export default {
                     yAxisIndex: 1,
                     itemStyle: {
                         normal: {
-                        color: '#7fbe9e'
-                        },
-                        emphasis: {
-                        color: '#140'
+                            color: '#7fbe9e'
                         }
                     },
                     data: stocks.volume
@@ -493,41 +491,11 @@ export default {
                     type: 'candlestick',
                     name: 'STOCK',
                     data: stocks.data,
-                    itemStyle: {
-                        normal: {
-                        color: '#ef232a',
-                        color0: '#14b143',
-                        borderColor: '#ef232a',
-                        borderColor0: '#14b143'
-                        },
-                        emphasis: {
-                        color: 'black',
-                        color0: '#444',
-                        borderColor: 'black',
-                        borderColor0: '#444'
-                        }
-                    }
-                }, {
-                    name: 'MA5',
-                    type: 'line',
-                    data: dataMA5,
-                    smooth: true,
-                    showSymbol: false,
-                    lineStyle: {
-                        normal: {
-                        width: 1
-                        }
-                    }
-                }, {
-                    name: 'MA10',
-                    type: 'line',
-                    data: dataMA10,
-                    smooth: true,
-                    showSymbol: false,
-                    lineStyle: {
-                        normal: {
-                        width: 1
-                        }
+                    markPoint: {
+                        data: stocks.markpoints
+                    },
+                    markLine: {
+                        data: stocks.markLines
                     }
                 }, {
                     name: 'MA20',
@@ -552,9 +520,36 @@ export default {
                         width: 1
                         }
                     }
+                },{
+                    name: 'predicted',
+                    type: 'line',
+                    data: [],
+                    smooth: false,
+                    showSymbol: false,
+                    lineStyle: {
+                        normal: {
+                            width: 2
+                        }
+                    }
                 }]
             };
             me.chart_options = option;
+        },
+        onReceiveData(data) {
+            var me = this;
+            var predicted_series = this.chart_options.series.find(function(d) {
+                return d.name === 'predicted'
+            })
+            var date = this.chart_options.xAxis[0].data;
+            predicted_series.data = data;
+            if(date.length < predicted_series.data.length) {
+                var last_date = moment(date[date.length-1]);
+                for(var i = 0; i < predicted_series.data.length - date.length; i++) {
+                    date.push(last_date.add(i+1,'day').format("YYYY-MM-DD"))
+                }
+            }
+            //console.log(me.origin_data.)
+            //console.log(this.chart_options.series);
         }
     },
     beforeCreate(){
@@ -569,6 +564,11 @@ export default {
     mounted() {
         var me = this;
         console.log('mounted');
+        common.socket.on('predicted', me.onReceiveData);
+        me.$nextTick(function(){
+            common.socket.emit('connected', "test");
+        });
+
         var sidebar =  {};
         $('#sidebar-separator').draggable({
             axis:"x",
@@ -608,8 +608,6 @@ export default {
                 if(me.selected_item.category) me.refresh();
             }
         });
-        console.log(me.$refs.echart);
-        //common.chart.init('chart-space', {signal:this.signal});
     },
     beforeUpdate() {
 
@@ -618,9 +616,10 @@ export default {
         
     },
     beforeDestroy() {
-        //common.chart.uninit();
+
     },
     destroyed() {
+        common.socket.off('predicted', this.onReceiveData);
         console.log('destroyed')
     }
 }

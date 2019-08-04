@@ -55,8 +55,8 @@ export default {
             return res;
         })
     },
-    getData: function(id, end_date) {
-        var url = "/stock/data?id=" + id + "&to_date=" + end_date;
+    getData: function(id, end_date,start_date) {
+        var url = "/stock/data?id=" + id + "&to_date=" + end_date + '&from_date=' + start_date;
         return http.get(url).then(function(res) {
             return res;
         })
@@ -64,6 +64,12 @@ export default {
     getList: function(id) {
         var url = "/stock/search?id=" + id;
         return http.get(url).then(function(res) {
+            return res;
+        })
+    },
+    executePredict: function(data) {
+        var url = "/stock/predict";
+        return http.post(url,data).then(function(res) {
             return res;
         })
     },

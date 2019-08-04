@@ -35,7 +35,8 @@ khan = {
     session_store:null,
     database:null,
     logger:require('./utils/logger'),
-    model:null
+    model:null,
+    sockets:[]
 }
 
 module.exports = function(config) {
@@ -62,7 +63,7 @@ module.exports = function(config) {
             var me = this,
                 i;
             
-            function eachWorker(callback) { for (var id in cluster.workers) { callback(cluster.workers[id]); } }
+            function eachWorker(callback) { for (var id in cluster.workers) { callback(cluster.workers[id], id); } }
             
             if (cluster.isMaster) {
                 // var stats_path = path.resolve(process.env.root_path, './stats.json');
@@ -77,7 +78,7 @@ module.exports = function(config) {
                     var worker = cluster.fork();
 
                     worker.on('message', function(msg) {
-                        eachWorker(function(_worker) {
+                        eachWorker(function(_worker, id) {
                             _worker.send(msg);
                         })
                     })
@@ -92,16 +93,16 @@ module.exports = function(config) {
                 });
             } else {
                 process.on("message", function(msg) {
-                    khan.socket.clients.forEach((s) => {
+                    khan.sockets.forEach((s) => {
                         s.emit(msg.event,msg.data)
                     });
                 })
 
                 server.listen(port,'0.0.0.0', function(){
                     khan.logger.info(me.name + ' starting worker thread #' + cluster.worker.id);
-                    if(cluster.worker.id === me.cpus) {
-                        require('opener')("http://localhost:" + port);
-                    }
+                    // if(cluster.worker.id === me.cpus) {
+                    //     require('opener')("http://localhost:" + port);
+                    // }
                 }).on('error', function(err){
                     khan.logger.error(err.message);
                 })

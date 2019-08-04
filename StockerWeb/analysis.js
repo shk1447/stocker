@@ -44,7 +44,7 @@ var csv = {
 var utils = require('./machine_learning/utils/utils.js')
 
 // [{key:'category',condition:'=',value:'009150'},{key:'unixtime',condition:'<=',value:'2019-01-22'}]
-khan.model.past_stock.selectByCategory([{key:'category',condition:'=',value:'085310'}]).map((row) => {
+khan.model.past_stock.selectByCategory([{key:'category',condition:'=',value:'009150'}]).map((row) => {
     row.rawdata = JSON.parse(row.rawdata);
     csv.volume.push(parseFloat(row.rawdata["거래량"]));
     csv.date.push(moment(row.unixtime).format('YYYY-MM-DD'));
@@ -172,9 +172,9 @@ khan.model.past_stock.selectByCategory([{key:'category',condition:'=',value:'085
     //console.log(Math.floor(minmax_scaled.scaled.shape[0]/timestamp)*timestamp+1);
     // tf.tensor3d([1, 2, 3, 4], [2, 2, 1]).print();
 
-    // fsPath.writeFile('./test.json', JSON.stringify(csv), 'utf-8', function(){
-    //     console.log('write!!!')
-    // });
+    fsPath.writeFile('./test.json', JSON.stringify(csv), 'utf-8', function(){
+        console.log('write!!!')
+    });
     
     // const model = tf.sequential();
     // model.add(tf.layers.dense({units:1, inputShape:[1]}));

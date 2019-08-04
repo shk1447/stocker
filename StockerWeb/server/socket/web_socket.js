@@ -7,6 +7,8 @@ var modules = require('./modules')
 module.exports = function(httpServer,khan) {
     var io = socket_io.listen(httpServer, { 'destroy buffer size': Infinity });
     io.sockets.on('connection', function(socket){
+        console.log('connected ', socket.id);
+        khan.sockets.push(socket);
         var ws = new WebSocket(process.env.wsUrl);
         ws.binaryType = "arraybuffer";
         ws.on('open', function() {
@@ -22,6 +24,10 @@ module.exports = function(httpServer,khan) {
                 socket.emit(d.target + "." + d.method, msg);
             }
         });
+
+        socket.on('connected', function() {
+            console.log('real connected');
+        })
 
         socket.on('subscribe', function(data) {
             try {
@@ -65,9 +71,9 @@ module.exports = function(httpServer,khan) {
             }
         });
 
-        
         socket.on('disconnect', function(){
             console.log('disconnected ', socket.id);
+            khan.sockets.splice(khan.sockets.indexOf(socket), 1);
             _.each(modules, (v,i) => {
                 v.unsubscribe(socket);
             })

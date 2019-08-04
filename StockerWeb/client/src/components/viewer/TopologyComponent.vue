@@ -168,64 +168,60 @@ export default {
         console.log('mounted');
         common.view.init('view-space');
         common.events.emit('changeDate', {date:this.collection_date});
-        common.socket.connect().then(function(data) {
-            console.log('connected');
-            common.socket.on('collection.complete', function(data) {
+    
+        console.log('connected');
+        common.socket.on('collection.complete', function(data) {
 
-                me.$notify({
-                    message:"수집 완료",
-                    type:"info"
-                });
+            me.$notify({
+                message:"수집 완료",
+                type:"info"
+            });
 
-                // me.autoAnalysis();
-                // setTimeout(function(){
-                //     me.onStartCollection();
-                // },500)
-            })
-            common.socket.on('collection.execute', function(data) {
-                var data = {"broadcast":true,"target":"collection", "method":"getlist", "parameters":{}};
-                common.socket.emit('fromclient', data);
-            })
-            common.socket.on('collection.modify', function(data) {
-                var data = {"broadcast":true,"target":"collection", "method":"getlist", "parameters":{}};
-                common.socket.emit('fromclient', data);
-            })
-            common.socket.on('collection.getlist', function(data) {
-                if(data.result.length > 0) {
-                    if(data.result[0].method_name === "CurrentStockInformation") {
-                        me.init = true;
-                        me.collection_date = typeof data.result[0].options === 'object' ? (data.result[0].options.date.includes("Invalid") ? new Date() : data.result[0].options.date) : 
-                        (JSON.parse(data.result[0].options).date.includes("Invalid") ? new Date() :JSON.parse(data.result[0].options).date);
-                        me.collection_status = data.result[0].status;
-                        me.$refs.sub_menu.refresh();
-                    } else {
-                        me.init = true;
-                        me.collection_status = data.result[0].status;
-                    }
-                } else {
-                    me.init = false;
-                    var param = {
-                        "target":"collection",
-                        "method":"create",
-                        "parameters":{
-                            "name":"stock",
-                            "module_name":"Finance.dll",
-                            "method_name":"AllStockInformation",
-                            "action_type":"once"
-                        }
-                    }
-                    common.socket.emit('fromclient', param);
-                }
-            })
-            
-            me.$nextTick(function(){
-                var data = {"broadcast":false,"target":"collection", "method":"getlist", "parameters":{}};
-                common.socket.emit('fromclient', data);
-            })
-        }).catch(function(err) {
-            console.log(err);
+            // me.autoAnalysis();
+            // setTimeout(function(){
+            //     me.onStartCollection();
+            // },500)
         })
-
+        common.socket.on('collection.execute', function(data) {
+            var data = {"broadcast":true,"target":"collection", "method":"getlist", "parameters":{}};
+            common.socket.emit('fromclient', data);
+        })
+        common.socket.on('collection.modify', function(data) {
+            var data = {"broadcast":true,"target":"collection", "method":"getlist", "parameters":{}};
+            common.socket.emit('fromclient', data);
+        })
+        common.socket.on('collection.getlist', function(data) {
+            if(data.result.length > 0) {
+                if(data.result[0].method_name === "CurrentStockInformation") {
+                    me.init = true;
+                    me.collection_date = typeof data.result[0].options === 'object' ? (data.result[0].options.date.includes("Invalid") ? new Date() : data.result[0].options.date) : 
+                    (JSON.parse(data.result[0].options).date.includes("Invalid") ? new Date() :JSON.parse(data.result[0].options).date);
+                    me.collection_status = data.result[0].status;
+                    me.$refs.sub_menu.refresh();
+                } else {
+                    me.init = true;
+                    me.collection_status = data.result[0].status;
+                }
+            } else {
+                me.init = false;
+                var param = {
+                    "target":"collection",
+                    "method":"create",
+                    "parameters":{
+                        "name":"stock",
+                        "module_name":"Finance.dll",
+                        "method_name":"AllStockInformation",
+                        "action_type":"once"
+                    }
+                }
+                common.socket.emit('fromclient', param);
+            }
+        })
+        
+        me.$nextTick(function(){
+            var data = {"broadcast":false,"target":"collection", "method":"getlist", "parameters":{}};
+            common.socket.emit('fromclient', data);
+        })
     },
     beforeUpdate() {
 
@@ -235,7 +231,7 @@ export default {
     },
     beforeDestroy() {
         common.socket.off('collection.modify').off('collection.getlist');
-        common.socket.disconnect();
+        //common.socket.disconnect();
         common.view.uninit();
     },
     destroyed() {
