@@ -104,8 +104,9 @@ common.chart = (function() {
         
         var end_date = end_date ? new Date(end_date) : new Date();
 
+        var box_range = {};
         var cross_lines = [];
-        data = data.filter(function(d) { return moment(d.unixtime).format("YYYY-MM-DD") <= moment(end_date).format("YYYY-MM-DD") });
+        // data = data.filter(function(d) { return moment(d.unixtime).format("YYYY-MM-DD") <= moment(end_date).format("YYYY-MM-DD") });
 
         var max_obj = data.reduce(function(prev, curr) { return prev.High > curr.High ? prev : curr});
         var min_obj = data.reduce(function(prev, curr) { return prev.Low < curr.Low ? prev : curr});
@@ -145,37 +146,40 @@ common.chart = (function() {
                 }
                 if(type === 'price') {
                     supstanceData.push({value:Math.floor(d.props.last_support), type:'support'})
-                    supstanceData.push({value:Math.floor(d.props.last_resist), type:'regist'})
+                    supstanceData.push({value:Math.floor(d.props.last_resist), type:'support'})
+
+                    supstanceData.push({value:Math.floor(box_range.props.last_support), type:'regist'})
+                    supstanceData.push({value:Math.floor(box_range.props.last_resist), type:'regist'})
                 }
             }
 
             if(prev_datum) {
-                if(type === 'price') {
-                    if(d.total_state && moment(end_date).add(1,'day') >= new Date(d.unixtime)) {
-                        if(prev_datum.current_state === '하락' && d.current_state === '상승' && parseInt(d.props["최근갯수"]) < 2) {
-                            prev_buy_signal = buy_signal;
-                            
-                            if(parseFloat(prev_datum.props.last_resist) >= prev_datum.Low && parseFloat(d.props.last_resist) <= d.Close) {
-                                trades.push({date:parseDate(d.unixtime), type:'buy', price:d.Low, volume:d.Volume, quantity:1, idx:k});
-                                buy_signal = d;
+                if(d.total_state && moment(end_date).add(1,'day') >= new Date(d.unixtime)) {
+                    var signal_count = 0;
+                    if(prev_datum.current_state === '하락' && d.current_state === '상승') {
+                        if(parseInt(d.props["최근갯수"]) < 2 && parseInt(prev_datum.props["최근갯수"]) > 2) {
+                            var signal = {date:parseDate(d.unixtime), type:'buy', price:d.Low, volume:d.Volume, quantity:1, idx:k};
+                            if(parseFloat(prev_datum.props.last_resist) > prev_datum.Close && parseFloat(d.props.last_resist) < d.Close) {
+                                if(parseFloat(prev_datum.props.last_resist) - parseFloat(d.props.last_resist) > 0 && prev_datum.Close - d.Close < 0) {
+                                    signal_count++;
+                                }
                             }
-                        }
-                        
-                        if(prev_datum.current_state === '상승' && d.current_state === '하락' && parseInt(d.props["최근갯수"]) < 2) {
-                            prev_sell_signal = sell_signal;
-    
-                            if(parseFloat(prev_datum.props.last_support) <= prev_datum.High && parseFloat(d.props.last_support) >= d.Close) {
-                                trades.push({date:parseDate(d.unixtime), type:'sell', price:d.High, volume:d.Volume, quantity:1, idx:k});
-                                sell_signal = d;
+                            if(prev_datum.support_count - d.support_count < 0 && prev_datum.regist_count - d.regist_count > 0
+                                && d.regist_count <= d.support_count) {
+                                signal_count++;
+                            }
+
+                            if(signal_count > 0) {
+                                if(signal_count > 1) {
+                                    signal.type = 'buy-pending';
+                                }
+                                trades.push(signal);
                             }
                         }
                     }
-                } else if(type === 'resist') {
-                    if(parseFloat(prev_datum.props.last_resist) > prev_datum.Close && parseFloat(d.props.last_resist) < d.Close) {
-                        if(parseFloat(prev_datum.props.last_resist) - parseFloat(d.props.last_resist) > 0 &&
-                        prev_datum.Close - d.Close < 0) {
-                            trades.push({date:parseDate(d.unixtime), type:'buy', price:parseFloat(d.props.last_resist), volume:d.Volume, quantity:1});
-                        }
+
+                    if(prev_datum.current_state === '상승' && d.current_state === '하락') {
+                        box_range = d;
                     }
                 }
             }

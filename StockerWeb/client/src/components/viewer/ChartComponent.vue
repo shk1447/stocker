@@ -66,7 +66,7 @@
     </div>
     <div id="sidebar" ref="sidebar"></div>
     <div id="sidebar-separator" class="ui-draggable"></div>
-    <div id="chart-space" ref="chart_space">
+    <div id="chart-space" ref="chart_space" style="padding:30px;">
         <v-chart ref="echart" :options="chart_options" :initOptions="init_options"/>
     </div>
 </div>
@@ -101,7 +101,8 @@ export default {
             favorite:false,
             end_date:new Date(),
             start_date:moment().add('day', -730),
-            data_type:'price'
+            data_type:'price',
+            last_predicted:[]
         }
     },
     components:{
@@ -169,6 +170,7 @@ export default {
                 this.alarm = false;
             }
             this.selected_item = item;
+            this.last_predicted = [];
             this.refresh();
         },
         querySearchAsync(queryString, cb) {
@@ -212,7 +214,8 @@ export default {
                         data : [],
                         date : [],
                         markpoints : [],
-                        markLines : []
+                        markLines : [],
+                        predicted:[]
                     }
                     data.map(function(d,k) {
                         csv.volume.push(d.Volume);
@@ -227,18 +230,27 @@ export default {
                         if(prev_datum) {
                             if(me.data_type === 'price') {
                                 if(d.total_state && moment(me.end_date).add(1,'day') >= new Date(d.unixtime)) {
-                                    var double_signal = false;
+                                    var signal_count = 0;
                                     if(prev_datum.current_state === '하락' && d.current_state === '상승') {
                                         if(parseInt(d.props["최근갯수"]) < 2 && parseInt(prev_datum.props["최근갯수"]) > 2) {
+                                            var signal = {name:'buy', value:'buy', xAxis:k, yAxis:d.High,itemStyle:{color:'#61a0a8'}};
                                             if(parseFloat(prev_datum.props.last_resist) > prev_datum.Close && parseFloat(d.props.last_resist) < d.Close) {
                                                 if(parseFloat(prev_datum.props.last_resist) - parseFloat(d.props.last_resist) > 0 && prev_datum.Close - d.Close < 0) {
-                                                    trades.push({name:'ready', value:'ready', xAxis:k, yAxis:d.High,itemStyle:{color:'#428688'}});
+                                                    signal_count++;
                                                 }
                                             }
-                                            if(prev_datum.support_count - d.support_count < 0 && prev_datum.regist_count - d.regist_count > 0 && d.regist_count <= d.support_count) {
-                                                trades.push({name:'buy', value:'buy', xAxis:k, yAxis:d.High,itemStyle:{color:'#61a0a8'}});
-                                                buy_signal = d;
-                                                console.log(box_range.length);
+                                            if(prev_datum.support_count - d.support_count < 0 && prev_datum.regist_count - d.regist_count > 0
+                                                && d.regist_count <= d.support_count) {
+                                                signal_count++;
+                                            }
+
+                                            if(signal_count > 0) {
+                                                if(signal_count > 1) {
+                                                    signal.name = 'BUY';
+                                                    signal.value = 'BUY';
+                                                    signal.itemStyle.color = '#428688'
+                                                }
+                                                trades.push(signal);
                                             }
                                         }
                                         box_range2 = d;
@@ -247,51 +259,17 @@ export default {
                                     if(prev_datum.current_state === '상승' && d.current_state === '하락') {
                                         box_range = d;
                                     }
-
-                                    if(parseFloat(prev_datum.props.last_resist) > prev_datum.Close && parseFloat(d.props.last_resist) < d.Close) {
-                                        if(parseFloat(prev_datum.props.last_resist) - parseFloat(d.props.last_resist) > 0 && prev_datum.Close - d.Close < 0) {
-                                            //trades.push({name:'ready', value:'ready', xAxis:k, yAxis:d.High,itemStyle:{color:'#428688'}});
-                                            // if(double_signal) {
-                                            //     trades.push({name:'double', value:'double', xAxis:k, yAxis:d.High,itemStyle:{color:'#42861a'}});
-                                            // } else {
-                                            //     trades.push({name:'ready', value:'ready', xAxis:k, yAxis:d.High,itemStyle:{color:'#428688'}});
-                                            // }
-                                            //trades.push({date:d.unixtime, type:'buy', price:parseFloat(d.props.last_resist), volume:d.Volume, quantity:1});
-                                        }
-                                    }
-                                    
-                                    // if(prev_datum.current_state === '상승' && d.current_state === '하락' && parseInt(d.props["최근갯수"]) < 2) {                
-                                    //     if(prev_datum.support_count - d.support_count > 0 && prev_datum.regist_count - d.regist_count < 0) {
-                                    //         trades.push({name:'sell', value:'sell', xAxis:k, yAxis:d.High,itemStyle:{color:'#c23531'}});
-                                    //         sell_signal = d;
-                                    //     }
-                                    // }
-                                }
-                            } else if(me.data_type === 'resist') {
-                                if(parseFloat(prev_datum.props.last_resist) > prev_datum.Close && parseFloat(d.props.last_resist) < d.Close) {
-                                    if(parseFloat(prev_datum.props.last_resist) - parseFloat(d.props.last_resist) > 0 &&
-                                    prev_datum.Close - d.Close < 0 && d.current_state === '상승' && parseInt(d.props["최근갯수"]) < 2) {
-                                        trades.push({name:'buy', value:'buy', xAxis:k, yAxis:d.High,itemStyle:{color:'#61a0a8'}});
-                                        //trades.push({date:d.unixtime, type:'buy', price:parseFloat(d.props.last_resist), volume:d.Volume, quantity:1});
-                                    }
-                                }
-
-                                if(parseFloat(prev_datum.props.last_support) < prev_datum.Close && parseFloat(d.props.last_support) > d.Close) {
-                                    if(parseFloat(prev_datum.props.last_support) - parseFloat(d.props.last_support) < 0 &&
-                                    prev_datum.Close - d.Close < 0 && parseInt(d.props["최근갯수"]) < 3) {
-                                        trades.push({name:'sell', value:'sell', xAxis:k, yAxis:d.High,itemStyle:{color:'#c23531'}});
-                                        //trades.push({date:d.unixtime, type:'buy', price:parseFloat(d.props.last_resist), volume:d.Volume, quantity:1});
-                                    }
                                 }
                             }
                         }
                         
                         prev_datum = d;
                     })
-                    console.log(golden_cross);
+                    
                     csv.markpoints = trades;
                     csv.markLines.push({
                         name:'last_resist',
+                        xAxis:csv.date[csv.date.length - 10],
                         yAxis:parseFloat(box_range.props.last_resist),
                         itemStyle: {
                             normal: {color: 'rgb(50,50,200)'}
@@ -299,6 +277,7 @@ export default {
                     })
                     csv.markLines.push({
                         name:'last_support',
+                        xAxis:csv.date[csv.date.length - 10],
                         yAxis:parseFloat(box_range.props.last_support),
                         itemStyle: {
                             normal: {color: 'rgb(50,50,200)'}
@@ -306,6 +285,7 @@ export default {
                     })
                     csv.markLines.push({
                         name:'last_resist',
+                        xAxis:csv.date[csv.date.length - 10],
                         yAxis:parseFloat(box_range2.props.last_resist),
                         itemStyle: {
                             normal: {color: 'rgb(200,50,50)'}
@@ -313,11 +293,13 @@ export default {
                     })
                     csv.markLines.push({
                         name:'last_support',
+                        xAxis:csv.date[csv.date.length - 10],
                         yAxis:parseFloat(box_range2.props.last_support),
                         itemStyle: {
                             normal: {color: 'rgb(200,50,50)'}
                         }
                     })
+                    csv.predicted = me.last_predicted;
                     me.origin_data = csv;
                     me.setOptions(csv);
                 })
@@ -392,7 +374,7 @@ export default {
                     axisLine: { lineStyle: { color: '#777' } },
                     axisLabel: {
                         formatter: function (value) {
-                        return echarts.format.formatTime('MM-dd', value);
+                            return echarts.format.formatTime('MM-dd', value);
                         }
                     },
                     min: 'dataMin',
@@ -523,7 +505,7 @@ export default {
                 },{
                     name: 'predicted',
                     type: 'line',
-                    data: [],
+                    data: stocks.predicted,
                     smooth: false,
                     showSymbol: false,
                     lineStyle: {
@@ -544,10 +526,12 @@ export default {
             predicted_series.data = data;
             if(date.length < predicted_series.data.length) {
                 var last_date = moment(date[date.length-1]);
-                for(var i = 0; i < predicted_series.data.length - date.length; i++) {
-                    date.push(last_date.add(i+1,'day').format("YYYY-MM-DD"))
+                var current_index = date.length;
+                for(var i = 0; i < predicted_series.data.length - current_index; i++) {
+                    date.push(last_date.add(1,'day').format("YYYY-MM-DD"))
                 }
             }
+            me.last_predicted = data;
             //console.log(me.origin_data.)
             //console.log(this.chart_options.series);
         }

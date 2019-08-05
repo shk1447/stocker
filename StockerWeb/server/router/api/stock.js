@@ -76,7 +76,7 @@ module.exports = {
                 })
             
                 var minmax_scaled = utils.minmax_1d(close)
-                var timestamp = 20;
+                var timestamp = 5;
                 var epoch = 32;
                 var future = 60;
                 var layer_size = 20;
@@ -89,7 +89,7 @@ module.exports = {
                 var dense_layer = tf.layers.dense({units:1, activation: 'linear'});
             
                 var in_dropout_rate = 1;
-                var out_dropout_rate = 0.99;
+                var out_dropout_rate = 0.95;
                 function f(x,states) {
                     try {
                         x = utils.dropout_nn(x, in_dropout_rate);
