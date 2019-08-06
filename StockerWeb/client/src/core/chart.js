@@ -105,6 +105,7 @@ common.chart = (function() {
         var end_date = end_date ? new Date(end_date) : new Date();
 
         var box_range = {};
+        var box_range2 = {};
         var cross_lines = [];
         // data = data.filter(function(d) { return moment(d.unixtime).format("YYYY-MM-DD") <= moment(end_date).format("YYYY-MM-DD") });
 
@@ -155,8 +156,9 @@ common.chart = (function() {
 
             if(prev_datum) {
                 if(d.total_state && moment(end_date).add(1,'day') >= new Date(d.unixtime)) {
+                    var isSignal = false;
                     var signal_count = 0;
-                    if(prev_datum.current_state === '하락' && d.current_state === '상승') {
+                    if(prev_datum.current_state === '하락' && d.current_state === '상승' && d.total_state === '상승') {
                         if(parseInt(d.props["최근갯수"]) < 2 && parseInt(prev_datum.props["최근갯수"]) > 2) {
                             var signal = {date:parseDate(d.unixtime), type:'buy', price:d.Low, volume:d.Volume, quantity:1, idx:k};
                             if(parseFloat(prev_datum.props.last_resist) > prev_datum.Close && parseFloat(d.props.last_resist) < d.Close) {
@@ -174,7 +176,9 @@ common.chart = (function() {
                                     signal.type = 'buy-pending';
                                 }
                                 trades.push(signal);
+                                isSignal = true;
                             }
+                            if(!isSignal) box_range2 = d;
                         }
                     }
 

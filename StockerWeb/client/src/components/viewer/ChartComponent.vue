@@ -231,7 +231,8 @@ export default {
                             if(me.data_type === 'price') {
                                 if(d.total_state && moment(me.end_date).add(1,'day') >= new Date(d.unixtime)) {
                                     var signal_count = 0;
-                                    if(prev_datum.current_state === '하락' && d.current_state === '상승') {
+                                    if(prev_datum.current_state === '하락' && d.current_state === '상승' && d.total_state === '상승') {
+                                        var isSignal = false;
                                         if(parseInt(d.props["최근갯수"]) < 2 && parseInt(prev_datum.props["최근갯수"]) > 2) {
                                             var signal = {name:'buy', value:'buy', xAxis:k, yAxis:d.High,itemStyle:{color:'#61a0a8'}};
                                             if(parseFloat(prev_datum.props.last_resist) > prev_datum.Close && parseFloat(d.props.last_resist) < d.Close) {
@@ -251,9 +252,10 @@ export default {
                                                     signal.itemStyle.color = '#428688'
                                                 }
                                                 trades.push(signal);
+                                                isSignal = true;
                                             }
                                         }
-                                        box_range2 = d;
+                                        if(!isSignal) box_range2 = d;
                                     }
 
                                     if(prev_datum.current_state === '상승' && d.current_state === '하락') {
