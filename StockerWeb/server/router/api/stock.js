@@ -44,6 +44,114 @@ module.exports = {
         }
     },
     post: {
+        "test": function(req,res,next) {
+            var promise_arr = [];
+            _.each(req.body, (v,k) => {
+                promise_arr.push(khan.model.past_stock.selectRecommend(v));
+            })
+            var test_data = {};
+            Promise.all(promise_arr).then((dataset) => {
+                _.each(dataset, (v,k) => {
+                    var rows = v[0];
+                    _.each(rows, (row, i) => {
+                        if(!test_data[row.id]) {
+                            test_data[row.id] = row;
+                            test_data[row.id]["good_count"] = 1;
+                        } else {
+                            test_data[row.id]["good_count"]++;
+                        }
+                    })
+                });
+                console.log(Object.keys(test_data).length);
+                var result = [];
+                var flow_date = [];
+                var promise = new Promise((resolve, reject) => {
+                    _.each(Object.keys(test_data), (id, i) => {
+                        var good_stock = test_data[id];
+                        
+                        khan.model.past_stock.selectData(id, moment().add('day', 1).format("YYYY-MM-DD"), undefined).then((data) => {
+                            good_stock.props = JSON.parse(good_stock.props);
+                            var start_date = moment();
+                            _.each(good_stock.props, (value,key) => {
+                                if(key.includes("_support_")) {
+                                    var test_date = moment(key.split("_support_")[1]);
+                                    if(start_date > test_date) {
+                                        start_date = test_date
+                                    }
+                                } else if(key.includes("_resistance_")) {
+                                    var test_date = moment(key.split("_resistance_")[1]);
+                                    if(start_date > test_date) {
+                                        start_date = test_date
+                                    }
+                                }
+                            })
+                            // console.log(good_stock.name, " : ", start_date.format("YYYY-MM-DD"));
+                            var past_data = data.filter((a) => {
+                                return moment(a.unixtime) < moment(good_stock.unixtime) && moment(a.unixtime) >= start_date;
+                            });
+                            var prev_data;
+                            var buy_price = 0;
+                            var buy_count = 0;
+                            var sell_price = 0;
+                            var sell_count = 0;
+                            past_data.map((row) => {
+                                row.props = JSON.parse(row.props);
+                                if(prev_data) {
+                                    if(prev_data.total_state === '하락' && row.total_state === '상승') {
+                                        buy_price += row.Close;
+                                        buy_count++;
+                                    }
+
+                                    if(prev_data.total_state === '상승' && row.total_state === '하락') {
+                                        sell_price += row.Close;
+                                        sell_count++;
+                                    }
+                                    if(good_stock.name === '코프라') {
+                                        var last_resist = parseFloat(row.props.last_resist) > 0 ? parseFloat(row.props.last_resist) : row.Close;
+                                        var last_support = parseFloat(row.props.last_support) > 0 ? parseFloat(row.props.last_support) : row.Close;
+                                        console.log(moment(row.unixtime).format("YYYY-MM-DD") , ' : ', (last_resist + last_support)/2);
+                                    }
+                                }
+                                prev_data = row;
+                            })
+                            //console.log(good_stock.name, " : ", total_price / signal_count, '원');
+                            good_stock["buy_price"] = buy_price / buy_count;
+                            good_stock["sell_price"] = sell_price / sell_count;
+                            
+                            var future_data = data.filter((a) => { return a.unixtime > good_stock.unixtime})
+                            if(future_data.length > 0) {
+                                var best_obj = future_data.reduce(function(prev, current) { return (prev.High > current.High) ? prev : current;});
+                                var wow = (best_obj.High - good_stock.price) / good_stock.price * 100;
+                                good_stock["yield"] = wow;
+                            } else {
+                                good_stock["yield"] = 0;
+                            }
+                            
+                            result.push(good_stock);
+                            if(result.length === Object.keys(test_data).length) {
+                                resolve();
+                            }
+                        });
+                        //console.log(id);
+                    })
+                })
+
+                promise.then(() => {
+                    var test = 0;
+                    var sorted_arr = result.sort(function(prev, current) { return prev.yield < current.yield ? -1 : prev.yield > current.yield ? 1 : 0;});
+                    _.each(sorted_arr, (v,k) => {
+                        console.log(v.name,'(',moment(v.unixtime).format("YYYY-MM-DD"), '[',v.good_count, ']) : ', v.yield, '%,',
+                        ' / 매수평균가 : ', v.buy_price, '/ 매도평균가 : ', v.sell_price, ' / 추천일 가격 : ', v.price, '/', parseFloat(v.props["V패턴_비율"]) - parseFloat(v.props["A패턴_비율"]));
+                        if(v.yield > 10) {
+                            test++;
+                        }
+                    })
+                    console.log('10%이상 수익 중목 : ', test, ' 종목');
+                    console.log(sorted_arr.length);
+                })
+            })
+            res.status(200).send();
+        },
         "recommend" : function(req,res,next) {
             khan.model.past_stock.selectRecommend(req.body).then((data) => {
                 var rows = data[0].map((d) => {
@@ -71,8 +179,8 @@ module.exports = {
         "predict": function(req,res,next) {
             new Promise((resolve, reject) => {
                 var csv = req.body;
-                var close = csv.data.map((el, idx) => {
-                    return el[1];
+                var close = csv.ma20.map((el, idx) => {
+                    return el;
                 })
             
                 var minmax_scaled = utils.minmax_1d(close)

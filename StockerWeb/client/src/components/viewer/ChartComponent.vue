@@ -212,11 +212,18 @@ export default {
                     var csv = {
                         volume : [],
                         data : [],
+                        ma20 : [],
+                        ma60 : [],
                         date : [],
                         markpoints : [],
                         markLines : [],
-                        predicted:[]
+                        predicted:[],
+                        last_resist:[],
+                        last_support:[]
                     }
+
+                    var temp_lastR = 0;
+                    var temp_lastS = 0;
                     data.map(function(d,k) {
                         csv.volume.push(d.Volume);
                         csv.date.push(moment(d.unixtime).format('YYYY-MM-DD'));
@@ -233,7 +240,8 @@ export default {
                                     var signal_count = 0;
                                     if(prev_datum.current_state === '하락' && d.current_state === '상승' && d.total_state === '상승') {
                                         var isSignal = false;
-                                        if(parseInt(d.props["최근갯수"]) < 2 && parseInt(prev_datum.props["최근갯수"]) > 2) {
+                                        if(parseInt(d.props["최근갯수"]) < 3 && parseInt(d.props["과거갯수"]) > 2
+                                            && parseInt(d.props["최근갯수"]) <= parseInt(d.props["과거갯수"])) {
                                             var signal = {name:'buy', value:'buy', xAxis:k, yAxis:d.High,itemStyle:{color:'#61a0a8'}};
                                             if(parseFloat(prev_datum.props.last_resist) > prev_datum.Close && parseFloat(d.props.last_resist) < d.Close) {
                                                 if(parseFloat(prev_datum.props.last_resist) - parseFloat(d.props.last_resist) > 0 && prev_datum.Close - d.Close < 0) {
@@ -263,10 +271,26 @@ export default {
                                     }
                                 }
                             }
+
+                            var last_resist = parseFloat(d.props.last_resist);
+                            var last_support = parseFloat(d.props.last_support);
+                            if(last_resist > 0) temp_lastR = last_resist;
+                            else last_resist = temp_lastR;
+
+                            if(last_support > 0) temp_lastS = last_support;
+                            else last_support = temp_lastS;
+                            
+                            csv.last_resist.push([0,last_resist,0,0])
+                            csv.last_support.push([0,last_support,0,0])
                         }
                         
                         prev_datum = d;
                     })
+
+                    csv.last_resist = me.calculateMA(60, csv.last_resist);
+                    csv.last_support = me.calculateMA(60, csv.last_support);
+                    csv.ma20 = me.calculateMA(20, csv.data);
+                    csv.ma60 = me.calculateMA(60, csv.data);
                     
                     csv.markpoints = trades;
                     csv.markLines.push({
@@ -326,9 +350,7 @@ export default {
             var me = this;
             var color_list = ['#c23531','#2f4554', '#61a0a8', '#d48265', '#91c7ae','#749f83',  '#ca8622', '#bda29a','#6e7074', '#546570', '#c4ccd3'];
             // var dataMA5 = this.calculateMA(5, stocks.data);
-            // var dataMA10 = this.calculateMA(10, stocks.data);
-            var dataMA20 = this.calculateMA(20, stocks.data);
-            var dataMA60 = this.calculateMA(60, stocks.data);
+            
             var option = {
                 animation: false,
                 color: color_list,
@@ -337,7 +359,7 @@ export default {
                 },
                 legend: {
                     top: 30,
-                    data: ['STOCK', 'MA20', 'MA60', 'predicted']
+                    data: ['STOCK', 'MA20', 'MA60', 'RESIST', 'SUPPORT', 'PREDICTED']
                 },
                 tooltip: {
                     trigger: 'axis',
@@ -484,7 +506,7 @@ export default {
                 }, {
                     name: 'MA20',
                     type: 'line',
-                    data: dataMA20,
+                    data: stocks.ma20,
                     smooth: true,
                     showSymbol: false,
                     lineStyle: {
@@ -496,12 +518,35 @@ export default {
                 {
                     name: 'MA60',
                     type: 'line',
-                    data: dataMA60,
+                    data: stocks.ma60,
                     smooth: true,
                     showSymbol: false,
                     lineStyle: {
                         normal: {
                         width: 1
+                        }
+                    }
+                },{
+                    name: 'RESIST',
+                    type: 'line',
+                    data: stocks.last_resist,
+                    smooth: true,
+                    showSymbol: false,
+                    lineStyle: {
+                        normal: {
+                            width: 2
+                        }
+                    }
+                },
+                {
+                    name: 'SUPPORT',
+                    type: 'line',
+                    data: stocks.last_support,
+                    smooth: true,
+                    showSymbol: false,
+                    lineStyle: {
+                        normal: {
+                            width: 2
                         }
                     }
                 },{

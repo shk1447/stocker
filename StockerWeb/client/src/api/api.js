@@ -84,5 +84,11 @@ export default {
         return http.get(url).then(function(res) {
             return res;
         })
+    },
+    executeTest: function(data) {
+        var url = "/stock/test";
+        return http.post(url,data).then(function(res) {
+            return res;
+        })
     }
 }

@@ -159,7 +159,8 @@ common.chart = (function() {
                     var isSignal = false;
                     var signal_count = 0;
                     if(prev_datum.current_state === '하락' && d.current_state === '상승' && d.total_state === '상승') {
-                        if(parseInt(d.props["최근갯수"]) < 2 && parseInt(prev_datum.props["최근갯수"]) > 2) {
+                        if(parseInt(d.props["최근갯수"]) < 3 && parseInt(d.props["과거갯수"]) > 2
+                            && parseInt(d.props["최근갯수"]) <= parseInt(d.props["과거갯수"])) {
                             var signal = {date:parseDate(d.unixtime), type:'buy', price:d.Low, volume:d.Volume, quantity:1, idx:k};
                             if(parseFloat(prev_datum.props.last_resist) > prev_datum.Close && parseFloat(d.props.last_resist) < d.Close) {
                                 if(parseFloat(prev_datum.props.last_resist) - parseFloat(d.props.last_resist) > 0 && prev_datum.Close - d.Close < 0) {
