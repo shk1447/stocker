@@ -238,7 +238,7 @@ export default {
                             if(me.data_type === 'price') {
                                 if(d.total_state && moment(me.end_date).add(1,'day') >= new Date(d.unixtime)) {
                                     var signal_count = 0;
-                                    if(prev_datum.current_state === '하락' && d.current_state === '상승' && d.total_state === '상승') {
+                                    if(prev_datum.current_state === '하락' && d.current_state === '상승') {
                                         var isSignal = false;
                                         if(parseInt(d.props["최근갯수"]) < 3 && parseInt(d.props["과거갯수"]) > 2
                                             && parseInt(d.props["최근갯수"]) <= parseInt(d.props["과거갯수"])) {
@@ -271,18 +271,18 @@ export default {
                                     }
                                 }
                             }
-
-                            var last_resist = parseFloat(d.props.last_resist);
-                            var last_support = parseFloat(d.props.last_support);
-                            if(last_resist > 0) temp_lastR = last_resist;
-                            else last_resist = temp_lastR;
-
-                            if(last_support > 0) temp_lastS = last_support;
-                            else last_support = temp_lastS;
-                            
-                            csv.last_resist.push([0,last_resist,0,0])
-                            csv.last_support.push([0,last_support,0,0])
                         }
+
+                        var last_resist = parseFloat(d.props.last_resist);
+                        var last_support = parseFloat(d.props.last_support);
+                        if(last_resist > 0) temp_lastR = last_resist;
+                        else last_resist = temp_lastR;
+
+                        if(last_support > 0) temp_lastS = last_support;
+                        else last_support = temp_lastS;
+                        
+                        csv.last_resist.push([0,last_resist,0,0])
+                        csv.last_support.push([0,last_support,0,0])
                         
                         prev_datum = d;
                     })
