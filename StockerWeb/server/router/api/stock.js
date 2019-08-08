@@ -11,6 +11,22 @@ require('@tensorflow/tfjs-node-gpu');
 
 const utils = require('../../utils/utils.js');
 
+function calculateMA(dayCount, data, key_name) {
+    var result = [];
+    for (var i = 0, len = data.length; i < len; i++) {
+        if (i < dayCount) {
+            result.push(0);
+            continue;
+        }
+        var sum = 0;
+        for (var j = 0; j < dayCount; j++) {
+            sum += data[i - j][key_name];
+        }
+        result.push(parseFloat((sum / dayCount).toFixed(2)));
+    }
+    return result;
+}
+
 module.exports = {
     get : {
         "list" : function(req,res,next) {
@@ -63,62 +79,83 @@ module.exports = {
                     })
                 });
                 console.log(Object.keys(test_data).length);
+
+                var hoho = [];
                 var result = [];
                 var flow_date = [];
                 var promise = new Promise((resolve, reject) => {
                     _.each(Object.keys(test_data), (id, i) => {
                         var good_stock = test_data[id];
                         
-                        khan.model.past_stock.selectData(id, moment().add('day', 1).format("YYYY-MM-DD"), undefined).then((data) => {
+                        khan.model.past_stock.selectData(id, moment().add('day', 1).format("YYYY-MM-DD"), undefined).map((row) => {
+                            row.props = JSON.parse(row.props);
+                            row.last_resist = parseFloat(row.props.last_resist);
+                            row.last_support = parseFloat(row.props.last_support);
+                            row.ma20 = parseFloat(row.props["20평균가"]);
+                            row.ma60 = parseFloat(row.props["60평균가"]);
+                            return row;
+                        }).then((data) => {
                             good_stock.props = JSON.parse(good_stock.props);
-                            var start_date = moment();
-                            _.each(good_stock.props, (value,key) => {
-                                if(key.includes("_support_")) {
-                                    var test_date = moment(key.split("_support_")[1]);
-                                    if(start_date > test_date) {
-                                        start_date = test_date
-                                    }
-                                } else if(key.includes("_resistance_")) {
-                                    var test_date = moment(key.split("_resistance_")[1]);
-                                    if(start_date > test_date) {
-                                        start_date = test_date
-                                    }
-                                }
-                            })
-                            // console.log(good_stock.name, " : ", start_date.format("YYYY-MM-DD"));
-                            var past_data = data.filter((a) => {
-                                return moment(a.unixtime) < moment(good_stock.unixtime) && moment(a.unixtime) >= start_date;
-                            });
-                            var prev_data;
-                            var buy_price = 0;
-                            var buy_count = 0;
-                            var sell_price = 0;
-                            var sell_count = 0;
-                            past_data.map((row) => {
-                                row.props = JSON.parse(row.props);
-                                if(prev_data) {
-                                    if(prev_data.total_state === '하락' && row.total_state === '상승') {
-                                        buy_price += row.Close;
-                                        buy_count++;
-                                    }
 
-                                    if(prev_data.total_state === '상승' && row.total_state === '하락') {
-                                        sell_price += row.Close;
-                                        sell_count++;
-                                    }
-                                    if(good_stock.name === '코프라') {
-                                        var last_resist = parseFloat(row.props.last_resist) > 0 ? parseFloat(row.props.last_resist) : row.Close;
-                                        var last_support = parseFloat(row.props.last_support) > 0 ? parseFloat(row.props.last_support) : row.Close;
-                                        console.log(moment(row.unixtime).format("YYYY-MM-DD") , ' : ', (last_resist + last_support)/2);
+                            var resist_flow = calculateMA(60, data, "last_resist");
+                            var support_flow = calculateMA(60, data, "last_support");
+                            var ma20_flow = calculateMA(20, data, "Close");
+                            var ma60_flow = calculateMA(60, data, "Close");
+
+                            var prev_data;
+
+                            for(var row_index = 0; row_index < data.length; row_index++) {
+                                var row = data[row_index];
+                                if(prev_data) {
+                                    if(moment(row.unixtime) < moment(good_stock.unixtime)) {
+                                        // past
+                                        if(resist_flow[row_index] && support_flow[row_index] && ma20_flow[row_index] && ma60_flow[row_index]) {
+                                            if(ma20_flow[row_index - 1] < resist_flow[row_index - 1] && ma20_flow[row_index] >= resist_flow[row_index]) {
+                                                good_stock["flow_state"] = "last_up_resist";
+                                                good_stock["flow_date"] = moment(row.unixtime);
+                                            }
+    
+                                            if(ma20_flow[row_index - 1] > resist_flow[row_index - 1] && ma20_flow[row_index] <= resist_flow[row_index]) {
+                                                good_stock["flow_state"] = "last_down_resist";
+                                                good_stock["flow_date"] = moment(row.unixtime);
+                                            }
+    
+                                            if(ma20_flow[row_index - 1] < support_flow[row_index - 1] && ma20_flow[row_index] >= support_flow[row_index]) {
+                                                good_stock["flow_state"] = "last_up_support";
+                                                good_stock["flow_date"] = moment(row.unixtime);
+                                            }
+    
+                                            if(ma20_flow[row_index - 1] > support_flow[row_index - 1] && ma20_flow[row_index] <= support_flow[row_index]) {
+                                                good_stock["flow_state"] = "last_down_support";
+                                                good_stock["flow_date"] = moment(row.unixtime);
+                                            }
+                                        }
+                                    } else {
+                                        // future
+                                        if(prev_data.current_state === '하락' && row.current_state === '상승') {
+                                            if(good_stock["flow_state"] === 'last_up_resist') {
+                                                if(prev_data.Low < resist_flow[row_index - 1] && row.Close > resist_flow[row_index]
+                                                    && row.Close > ma20_flow[row_index]) {
+                                                    good_stock["buy_date"] = moment(row.unixtime);
+                                                    good_stock["buy_price"] = row.Close;
+                                                }
+                                            }
+
+                                            if(good_stock["flow_state"] === 'last_up_support') {
+                                                if(prev_data.Low < resist_flow[row_index - 1] && row.Close > resist_flow[row_index]
+                                                    && row.Close > ma20_flow[row_index]) {
+                                                    good_stock["buy_date"] = moment(row.unixtime);
+                                                    good_stock["buy_price"] = row.Close;
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                                 prev_data = row;
-                            })
-                            //console.log(good_stock.name, " : ", total_price / signal_count, '원');
-                            good_stock["buy_price"] = buy_price / buy_count;
-                            good_stock["sell_price"] = sell_price / sell_count;
+                            }
+
                             
-                            var future_data = data.filter((a) => { return a.unixtime > good_stock.unixtime})
+                            var future_data = data.filter((a) => { return moment(a.unixtime) > moment(good_stock.unixtime)})
                             if(future_data.length > 0) {
                                 var best_obj = future_data.reduce(function(prev, current) { return (prev.High > current.High) ? prev : current;});
                                 var wow = (best_obj.High - good_stock.price) / good_stock.price * 100;
@@ -126,6 +163,7 @@ module.exports = {
                             } else {
                                 good_stock["yield"] = 0;
                             }
+                            
                             
                             result.push(good_stock);
                             if(result.length === Object.keys(test_data).length) {
@@ -137,17 +175,20 @@ module.exports = {
                 })
 
                 promise.then(() => {
+                    var upup = 0;
                     var test = 0;
                     var sorted_arr = result.sort(function(prev, current) { return prev.yield < current.yield ? -1 : prev.yield > current.yield ? 1 : 0;});
                     _.each(sorted_arr, (v,k) => {
-                        console.log(v.name,'(',moment(v.unixtime).format("YYYY-MM-DD"), '[',v.good_count, ']) : ', v.yield, '%,',
-                        ' / 매수평균가 : ', v.buy_price, '/ 매도평균가 : ', v.sell_price, ' / 추천일 가격 : ', v.price, '/', parseFloat(v.props["V패턴_비율"]) - parseFloat(v.props["A패턴_비율"]));
-                        if(v.yield > 10) {
-                            test++;
+                        if(v.flow_state && v.flow_state.includes("_up_")) {
+                            upup++;    
+                            console.log(v.name,'(',moment(v.unixtime).format("YYYY-MM-DD"), '[',v.good_count, ']) : ', v.yield, '%,');
+                            if(v.yield > 10) {
+                                test++;
+                            }
                         }
                     })
                     console.log('10%이상 수익 중목 : ', test, ' 종목');
-                    console.log(sorted_arr.length);
+                    console.log(upup);
                 })
             })
             res.status(200).send();
