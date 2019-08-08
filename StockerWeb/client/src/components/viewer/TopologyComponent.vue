@@ -72,7 +72,7 @@ export default {
                 var test_obj = data.find(function(d) {
                     return d.id === start_date;
                 });
-                api.executeTest(test_obj.children).then(function(map) {
+                api.executeTest(test_obj.children[0]).then(function(map) {
                     console.log(map)
                 })
             });

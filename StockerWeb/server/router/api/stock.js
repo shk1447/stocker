@@ -62,32 +62,33 @@ module.exports = {
     post: {
         "test": function(req,res,next) {
             var promise_arr = [];
+            
             _.each(req.body, (v,k) => {
                 promise_arr.push(khan.model.past_stock.selectRecommend(v));
             })
             var test_data = {};
-            Promise.all(promise_arr).then((dataset) => {
-                _.each(dataset, (v,k) => {
-                    var rows = v[0];
-                    _.each(rows, (row, i) => {
-                        if(!test_data[row.id]) {
-                            test_data[row.id] = row;
-                            test_data[row.id]["good_count"] = 1;
-                        } else {
-                            test_data[row.id]["good_count"]++;
-                        }
-                    })
-                });
-                console.log(Object.keys(test_data).length);
+            khan.model.past_stock.selectTest(req.body).then((test_data) => {
+                // _.each(dataset, (v,k) => {
+                //     var rows = v[0];
+                //     _.each(rows, (row, i) => {
+                //         if(!test_data[row.id]) {
+                //             test_data[row.id] = row;
+                //             test_data[row.id]["good_count"] = 1;
+                //         } else {
+                //             test_data[row.id]["good_count"]++;
+                //         }
+                //     })
+                // });
+                // console.log(Object.keys(test_data).length);
 
                 var hoho = [];
                 var result = [];
                 var flow_date = [];
                 var promise = new Promise((resolve, reject) => {
-                    _.each(Object.keys(test_data), (id, i) => {
-                        var good_stock = test_data[id];
+                    _.each(test_data, (q, i) => {
+                        var good_stock = q;
                         
-                        khan.model.past_stock.selectData(id, moment().add('day', 1).format("YYYY-MM-DD"), undefined).map((row) => {
+                        khan.model.past_stock.selectData(q.id, moment().add('day', 1).format("YYYY-MM-DD"), undefined).map((row) => {
                             row.props = JSON.parse(row.props);
                             row.last_resist = parseFloat(row.props.last_resist);
                             row.last_support = parseFloat(row.props.last_support);
@@ -95,7 +96,7 @@ module.exports = {
                             row.ma60 = parseFloat(row.props["60평균가"]);
                             return row;
                         }).then((data) => {
-                            good_stock.props = JSON.parse(good_stock.props);
+                            //good_stock.props = JSON.parse(good_stock.props);
 
                             var resist_flow = calculateMA(60, data, "last_resist");
                             var support_flow = calculateMA(60, data, "last_support");
@@ -155,14 +156,14 @@ module.exports = {
                             }
 
                             
-                            var future_data = data.filter((a) => { return moment(a.unixtime) > moment(good_stock.unixtime)})
-                            if(future_data.length > 0) {
-                                var best_obj = future_data.reduce(function(prev, current) { return (prev.High > current.High) ? prev : current;});
-                                var wow = (best_obj.High - good_stock.price) / good_stock.price * 100;
-                                good_stock["yield"] = wow;
-                            } else {
-                                good_stock["yield"] = 0;
-                            }
+                            // var future_data = data.filter((a) => { return moment(a.unixtime) > moment(good_stock.unixtime)})
+                            // if(future_data.length > 0) {
+                            //     var best_obj = future_data.reduce(function(prev, current) { return (prev.High > current.High) ? prev : current;});
+                            //     var wow = (best_obj.High - good_stock.price) / good_stock.price * 100;
+                            //     good_stock["yield"] = wow;
+                            // } else {
+                            //     good_stock["yield"] = 0;
+                            // }
                             
                             
                             result.push(good_stock);
@@ -177,14 +178,15 @@ module.exports = {
                 promise.then(() => {
                     var upup = 0;
                     var test = 0;
-                    var sorted_arr = result.sort(function(prev, current) { return prev.yield < current.yield ? -1 : prev.yield > current.yield ? 1 : 0;});
+                    var sorted_arr = result.sort(function(prev, current) {
+                        var prev_val = Math.abs((parseFloat(prev.props["종가"])/prev.props.last_resist*100) - 100);
+                        var curr_val = Math.abs((parseFloat(current.props["종가"])/current.props.last_resist*100) - 100);
+                        return prev_val > curr_val ? -1 : prev_val < curr_val ? 1 : 0;
+                    });
                     _.each(sorted_arr, (v,k) => {
                         if(v.flow_state && v.flow_state.includes("_up_")) {
                             upup++;    
-                            console.log(v.name,'(',moment(v.unixtime).format("YYYY-MM-DD"), '[',v.good_count, ']) : ', v.yield, '%,');
-                            if(v.yield > 10) {
-                                test++;
-                            }
+                            console.log(v.name,'(',moment(v.unixtime).format("YYYY-MM-DD"));
                         }
                     })
                     console.log('10%이상 수익 중목 : ', test, ' 종목');

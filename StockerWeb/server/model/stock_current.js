@@ -74,8 +74,8 @@ CurrentStock.prototype.selectByParam = function(param) {
 };
 
 CurrentStock.prototype.selectAll = function() {
-    return khan.database(this.table_name).select(khan.database.raw('category, column_json(rawdata) as rawdata, unixtime')).map((row) => {
-        row.rawdata = JSON.parse(row.rawdata);
+    return khan.database(this.table_name).select(khan.database.raw('category as `id`, cast(column_json(rawdata) as CHAR) as `props`, unixtime')).map((row) => {
+        row.props = JSON.parse(row.props);
         return row;
     })
 };
