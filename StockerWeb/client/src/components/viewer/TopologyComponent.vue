@@ -67,12 +67,15 @@ export default {
     },
     methods: {
         onTest() {
-            var start_date = moment(this.collection_date).format('YYYY-MM');
+            var test_date = moment(this.collection_date);
             api.getDaily().then(function(data) {
                 var test_obj = data.find(function(d) {
-                    return d.id === start_date;
+                    return d.id === test_date.format('YYYY-MM');
                 });
-                api.executeTest(test_obj.children[0]).then(function(map) {
+                var execute_obj = test_obj.children.find(function(d) {
+                    return d.id === test_date.format("YYYY-MM-DD")
+                })
+                api.executeTest(execute_obj).then(function(map) {
                     console.log(map)
                 })
             });
@@ -249,7 +252,7 @@ export default {
 
     },
     beforeDestroy() {
-        common.socket.off('collection.modify').off('collection.getlist');
+        common.socket.off('collection.modify').off('collection.getlist').off('collection.complete').off('collection.execute');
         //common.socket.disconnect();
         common.view.uninit();
     },
