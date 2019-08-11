@@ -93,7 +93,7 @@ module.exports = {
                             for(var row_index = 0; row_index < data.length; row_index++) {
                                 var row = data[row_index];
                                 if(prev_data) {
-                                    if(moment(row.unixtime) < moment(good_stock.unixtime)) {
+                                    if(moment(row.unixtime) <= moment(good_stock.unixtime)) {
                                         // past
                                         if(resist_flow[row_index] && support_flow[row_index] && ma20_flow[row_index] && ma60_flow[row_index]) {
                                             if(ma20_flow[row_index - 1] <= resist_flow[row_index - 1] && ma20_flow[row_index] >= resist_flow[row_index]) {
@@ -116,16 +116,21 @@ module.exports = {
                                                 good_stock["flow_date"] = moment(row.unixtime);
                                             }
                                         }
-                                    } else {
+                                    } 
+                                    if(moment(row.unixtime) >= moment(good_stock.unixtime)){
                                         // future
-                                        if(prev_data.current_state === '하락' && row.current_state === '상승') {
-                                            if(row.old_count > 2 && row.new_count < 3) {
-                                                if(!good_stock["buy_date"]  && good_stock["flow_state"] === 'last_up_resist') {
+                                        if(!good_stock["buy_date"]  && good_stock["flow_state"] === 'last_up_resist') {
+                                            if(ma20_flow[row_index] >= resist_flow[row_index]) {
+                                                if(resist_flow[row_index] > row.Low && resist_flow[row_index] < row.Close) {
                                                     good_stock["buy_date"] = moment(row.unixtime);
                                                     good_stock["buy_price"] = row.Close;
                                                 }
-    
-                                                if(!good_stock["buy_date"] && good_stock["flow_state"] === 'last_up_support') {
+                                            }
+                                        }
+
+                                        if(!good_stock["buy_date"] && good_stock["flow_state"] === 'last_up_support') {
+                                            if(ma20_flow[row_index] >= support_flow[row_index]) {
+                                                if(resist_flow[row_index] > row.Low && resist_flow[row_index] < row.Close) {
                                                     good_stock["buy_date"] = moment(row.unixtime);
                                                     good_stock["buy_price"] = row.Close;
                                                 }
@@ -173,6 +178,7 @@ module.exports = {
                         // return prev_val > curr_val ? -1 : prev_val < curr_val ? 1 : 0;
                         return prev.yield < current.yield ? -1 : prev.yield > current.yield ? 1 : 0;
                     });
+                    var response_arr = [];
                     _.each(sorted_arr, (v,k) => {
                         if(v.flow_state && v.flow_state.includes("_up_")) {
                             upup++;
@@ -184,15 +190,16 @@ module.exports = {
                                 test++;
                             }
                             if(v.buy_date) {
-                                //console.log(v.name, ' buy timing : ', v.buy_date.format('YYYY-MM-DD'))
+                                console.log(v.name, ' buy timing : ', v.buy_date.format('YYYY-MM-DD'))
                             }
+                            response_arr.push(v);
                         }
                     })
                     console.log('5%이상 수익 중목 : ', test, ' 종목');
                     console.log('총추천 종목수 : ', upup ,' 종목');
+                    res.status(200).send(response_arr);
                 })
             })
-            res.status(200).send();
         },
         "recommend" : function(req,res,next) {
             khan.model.past_stock.selectRecommend(req.body).then((data) => {

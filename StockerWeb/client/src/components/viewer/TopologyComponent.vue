@@ -113,7 +113,7 @@ export default {
             var transfer_data = e.dataTransfer.getData("node");
             var data = JSON.parse(transfer_data);
             if(data.type === 'date') {
-                api.getRecommend(data).then(function(map) {
+                api.executeTest(data).then(function(map) {
                     common.view.setRecommend(data, map, e);
                     me.$loading({}).close();
                 }).catch(function(err) {
