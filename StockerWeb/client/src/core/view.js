@@ -298,7 +298,7 @@ common.view = (function() {
             var thisNode = d3.select(this);
             
             thisNode.attr("transform", function(d) { return "translate(" + (d.x) + "," + (d.y) + ")"; });
-            //d.animate();
+            d.animate();
             d.update();
             if(selected_id === d.id) {
                 d.node.classed('selected', true)
@@ -516,20 +516,7 @@ common.view = (function() {
                     item["x"] = x + node_size * (index + 1) * 10;
                     item["y"] = y;
                     var status = 0;
-                    var prev_state;
-                    item.current_state.forEach(function(d, i) {
-                        // if(prev_state) {
-                        //     if(prev_state === "하락" && d === "상승") {
-                        //         status++;
-                        //     } else if(prev_state === "상승" && d === "하락") {
-                        //         status--;
-                        //     }
-                        // }
-                        prev_state = d;
-                        item["total_status"] = item["total_state"][i];
-                    });
                     
-                    item["last_state"] = prev_state;
                     if(item.prev_supstance) {
                         item.prev_supstance = item.prev_supstance.split(',');
                     } else {
