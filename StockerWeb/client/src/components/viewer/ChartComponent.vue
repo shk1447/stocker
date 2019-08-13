@@ -262,12 +262,16 @@ export default {
                                                 trades.push(signal);
                                                 isSignal = true;
                                             }
+                                            box_range2 = d;
                                         }
-                                        if(!isSignal) box_range2 = d;
+                                        
                                     }
 
                                     if(prev_datum.current_state === '상승' && d.current_state === '하락') {
-                                        box_range = d;
+                                        if(parseInt(d.props["최근갯수"]) < 3 && parseInt(d.props["과거갯수"]) > 2
+                                        && parseInt(d.props["최근갯수"]) <= parseInt(d.props["과거갯수"])) {
+                                            box_range = d;
+                                        }
                                     }
                                 }
                             }
