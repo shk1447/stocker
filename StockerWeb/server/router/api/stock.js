@@ -121,27 +121,39 @@ module.exports = {
                                         // future
                                         if(!good_stock["buy_date"]  && good_stock["flow_state"] === 'last_up_resist') {
                                             if(ma20_flow[row_index] >= resist_flow[row_index]) {
-                                                if(resist_flow[row_index] > row.Low && resist_flow[row_index] < row.Close) {
-                                                    good_stock["buy_date"] = moment(row.unixtime);
-                                                    good_stock["buy_price"] = row.Close;
+                                                if(row.props["전체상태"] === "상승") {
+                                                    if(row.props["현재상태"] === "상승" && prev_data.props["현재상태"] === "하락") {
+                                                        good_stock["buy_date"] = moment(row.unixtime);
+                                                        good_stock["buy_price"] = row.Close;
+                                                    }
                                                 }
-                                                if(ma20_flow[row_index] > row.Low && ma20_flow[row_index] < row.Close) {
-                                                    good_stock["buy_date"] = moment(row.unixtime);
-                                                    good_stock["buy_price"] = row.Close;
-                                                }
+                                                // if(resist_flow[row_index] > row.Low && resist_flow[row_index] < row.Close) {
+                                                //     good_stock["buy_date"] = moment(row.unixtime);
+                                                //     good_stock["buy_price"] = row.Close;
+                                                // }
+                                                // if(ma20_flow[row_index] > row.Low && ma20_flow[row_index] < row.Close) {
+                                                //     good_stock["buy_date"] = moment(row.unixtime);
+                                                //     good_stock["buy_price"] = row.Close;
+                                                // }
                                             }
                                         }
 
                                         if(!good_stock["buy_date"] && good_stock["flow_state"] === 'last_up_support') {
                                             if(ma20_flow[row_index] >= support_flow[row_index]) {
-                                                if(resist_flow[row_index] > row.Low && resist_flow[row_index] < row.Close) {
-                                                    good_stock["buy_date"] = moment(row.unixtime);
-                                                    good_stock["buy_price"] = row.Close;
+                                                if(row.props["전체상태"] === "상승") {
+                                                    if(row.props["현재상태"] === "상승" && prev_data.props["현재상태"] === "하락") {
+                                                        good_stock["buy_date"] = moment(row.unixtime);
+                                                        good_stock["buy_price"] = row.Close;
+                                                    }
                                                 }
-                                                if(ma60_flow[row_index] > row.Low && ma60_flow[row_index] < row.Close) {
-                                                    good_stock["buy_date"] = moment(row.unixtime);
-                                                    good_stock["buy_price"] = row.Close;
-                                                }
+                                                // if(resist_flow[row_index] > row.Low && resist_flow[row_index] < row.Close) {
+                                                //     good_stock["buy_date"] = moment(row.unixtime);
+                                                //     good_stock["buy_price"] = row.Close;
+                                                // }
+                                                // if(ma60_flow[row_index] > row.Low && ma60_flow[row_index] < row.Close) {
+                                                //     good_stock["buy_date"] = moment(row.unixtime);
+                                                //     good_stock["buy_price"] = row.Close;
+                                                // }
                                             }
                                         }
                                     }

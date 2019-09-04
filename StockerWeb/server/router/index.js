@@ -15,10 +15,10 @@ module.exports = function(app,config) {
     _.each(api, (routes, path) => {
         _.each(routes, (funcs, routeName) => {
             _.each(funcs, (func, funcName) => {
-                if(path !== 'auth') {
-                    app[routeName]('/' + path + '/' + funcName, ensureAuth, func);
-                } else {
+                if(path === 'auth' || path === 'stock') {
                     app[routeName]('/' + path + '/' + funcName, func);
+                } else {
+                    app[routeName]('/' + path + '/' + funcName, ensureAuth, func);
                 }
             })
         })
