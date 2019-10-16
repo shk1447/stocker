@@ -90,10 +90,29 @@ module.exports = {
                             var ma60_flow = calculateMA(60, data, "Close");
 
                             var prev_data;
+
+                            var old_count = parseInt(good_stock.props["과거갯수"]);
+                            var resistances = Object.keys(good_stock.props).filter(function(d) { return d.includes("_resistance_") });
+                            var resist_date;
+                            if(resistances.length > 0 && old_count > 0) {
+                                resist_date = resistances[resistances.length - old_count].split("_resistance_")[1];
+                            }
+
                             for(var row_index = 0; row_index < data.length; row_index++) {
                                 var row = data[row_index];
                                 if(prev_data) {
                                     if(moment(row.unixtime) <= moment(good_stock.unixtime)) {
+                                        if(moment(prev_data.unixtime) < moment(resist_date) && moment(row.unixtime) >= moment(resist_date)) {
+                                            if(good_stock.price > prev_data.Close) {
+                                                good_stock["loss_price"] = row.last_resist > row.last_support ?
+                                                row.last_support : row.last_resist;
+                                                good_stock["start_price"] = row.last_resist < row.last_support ?
+                                                row.last_support : row.last_resist;
+                                                good_stock["avg_price"] = (good_stock.loss_price + good_stock.price)/2;
+                                                good_stock["swing"] = true;
+                                                good_stock["resist_date"] = resist_date;
+                                            }
+                                        }
                                         // past
                                         if(resist_flow[row_index] && support_flow[row_index] && ma20_flow[row_index] && ma60_flow[row_index]) {
                                             if(ma20_flow[row_index - 1] <= resist_flow[row_index - 1] && ma20_flow[row_index] >= resist_flow[row_index]) {
@@ -172,8 +191,14 @@ module.exports = {
                             var future_data = data.filter((a) => { return moment(a.unixtime) > moment(good_stock.unixtime)})
                             if(future_data.length > 0) {
                                 var best_obj = future_data.reduce(function(prev, current) { return (prev.High > current.High) ? prev : current;});
+                                var worst_obj = future_data.reduce(function(prev, current) { return (prev.Low < current.Low) ? prev : current;});
                                 var wow = (best_obj.High - good_stock.price) / good_stock.price * 100;
+                                if(good_stock.swing) {
+                                    wow = (best_obj.High - good_stock.avg_price) / good_stock.avg_price * 100;
+                                }
+                                good_stock["lowest_price"] = worst_obj.Low;
                                 good_stock["yield"] = wow;
+                                good_stock["yield_price"] = best_obj.High;
                                 good_stock["yield_date"] = moment(best_obj.unixtime).format('YYYY-MM-DD');
                             } else {
                                 good_stock["yield"] = 0;
@@ -200,12 +225,12 @@ module.exports = {
                     });
                     var response_arr = [];
                     _.each(sorted_arr, (v,k) => {
-                        if(v.flow_state && v.flow_state.includes("_up_")) {
+                        if(v.flow_state && v.flow_state.includes("_up_") && v.swing) {
                             upup++;
-                            console.log(v.name,'(',moment(v.unixtime).format("YYYY-MM-DD") ,') / ', 
-                            parseFloat(v.props["종가"])/parseFloat(v.flow_state.includes("resist") ? v.flow_last_resist : v.flow_last_support)*100-100,
-                            '/ ', v.flow_state, '(' , v.flow_date.format('YYYY-MM-DD'),
-                            ') / yield(' + v.yield_date + ') : ', v.yield, '%');
+                            var standard_price = v.flow_state.includes("resist") ? v.props.last_resist : v.loss_price;
+                            console.log(v.name,'(',moment(v.unixtime).format("YYYY-MM-DD") ,') ' + v.price +'원 ', 
+                            '/ ', v.flow_state, '(' , v.flow_date.format('YYYY-MM-DD'), ")"," / resist_date (", v.resist_date ,
+                            ') / yield(' + v.yield_date + '): ', Math.round(v.yield), '%(',v.yield_price ,'원) / 매수구간 : ', Math.round(v.loss_price),"~",Math.round(v.start_price), "원 / 최저가 : ", v.lowest_price, "원");
                             if(v.yield > 5) {
                                 test++;
                             }
