@@ -1,8 +1,10 @@
 //const d3 = require('d3');
 const _ = require('lodash');
 const randomColor = require('randomcolor');
+const moment = require('moment');
 
 require('./d3_extension/keybinding');
+
 
 common.view = (function() {
     var width, height, container_div;
@@ -273,8 +275,14 @@ common.view = (function() {
             var text_node = node.append('svg:text').attr('y', node_size+12).style('stroke', 'none').style("text-anchor", "middle").text(d.name);
 
             d.update = function() {
-                if(d.detail) {
-                    
+                if(d.swing && d.detail) {
+                    var description = d.name+'('+moment(d.unixtime).format("YYYY-MM-DD") +') ' + d.price +'원 '+ 
+                    '/ '+ d.flow_state+ '(' + moment(d.flow_date).format('YYYY-MM-DD')+ ")"+" / resist_date ("+ d.resist_date +
+                    ') / 예상수익률(' + d.yield_date + '): '+ Math.round(d.yield)+ '%('+d.yield_price +'원) / 매수구간 : '+ Math.round(d.loss_price)+"~"+Math.round(d.start_price)+ "원 / 최저가 : "+ d.lowest_price+ "원";
+                    d.detail["추천일 종가"] = d.price +'원';
+                    d.detail["예상수익률"] = Math.round(d.yield)+ '% ('+d.yield_price +'원)';
+                    d.detail["매수구간"] = Math.round(d.loss_price)+"~"+Math.round(d.start_price)+ "원";
+                    //console.log(Object.keys(d.detail))
                     var tspan = text_node.selectAll('tspan').data(Object.keys(d.detail), function(d) { return d; });
                     tspan.exit().remove();
                     var tspanEnter = tspan.enter().append('tspan');
@@ -287,8 +295,6 @@ common.view = (function() {
                         var node = d3.select(this);
                         node.text(a + " :" + d.detail[a]);
                     })
-
-                    //text_node.text(d.name + "\\n" + d.detail.Close + "원");
                 }
             };
         });

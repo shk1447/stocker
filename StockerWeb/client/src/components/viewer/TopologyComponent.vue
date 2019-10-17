@@ -15,11 +15,6 @@
             </span>
         </div>
         <div style="flex:1 1 100%; "></div>
-        <div class="tool right">
-            <span style="font-size:1.2em;" @click="onTest">
-                TEST
-            </span>
-        </div>
         <div class="tool right" @click="onAlarm">
             <span style="font-size:1.2em;">
                 <i :class="alarm ? 'far fa-bell' : 'far fa-bell-slash'"></i>
