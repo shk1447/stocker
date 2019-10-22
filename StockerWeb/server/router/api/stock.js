@@ -83,7 +83,7 @@ module.exports = {
                             return row;
                         }).then((data) => {
                             good_stock.props = JSON.parse(good_stock.props);
-
+                            //console.log(good_stock);
                             var resist_flow = calculateMA(60, data, "last_resist");
                             var support_flow = calculateMA(60, data, "last_support");
                             var ma20_flow = calculateMA(20, data, "Close");
@@ -193,9 +193,9 @@ module.exports = {
                                 var best_obj = future_data.reduce(function(prev, current) { return (prev.High > current.High) ? prev : current;});
                                 var worst_obj = future_data.reduce(function(prev, current) { return (prev.Low < current.Low) ? prev : current;});
                                 var wow = (best_obj.High - good_stock.price) / good_stock.price * 100;
-                                if(good_stock.swing) {
-                                    wow = (best_obj.High - good_stock.avg_price) / good_stock.avg_price * 100;
-                                }
+                                // if(good_stock.swing) {
+                                //     wow = (best_obj.High - good_stock.price) / good_stock.price * 100;
+                                // }
                                 good_stock["lowest_price"] = worst_obj.Low;
                                 good_stock["yield"] = wow;
                                 good_stock["yield_price"] = best_obj.High;
@@ -225,7 +225,8 @@ module.exports = {
                     });
                     var response_arr = [];
                     _.each(sorted_arr, (v,k) => {
-                        if(v.flow_state && v.flow_state.includes("_up_") && v.swing) {
+                        if(v.flow_state && v.flow_state.includes("_up_") && parseInt(v.props["지지갯수"]) > parseInt(v.props["저항갯수"])) {
+                            console.log(parseInt(v.props["지지갯수"]) - parseInt(v.props["supports"]) >= parseInt(v.props["저항갯수"]))
                             upup++;
                             var standard_price = v.flow_state.includes("resist") ? v.props.last_resist : v.loss_price;
                             console.log(v.name,'(',moment(v.unixtime).format("YYYY-MM-DD") ,') ' + v.price +'원 ', 

@@ -118,15 +118,14 @@ var webpack_config = {
     })
   ]
 }
-
+webpack_config.plugins.push(
+  new BundleAnalyzerPlugin({
+    analyzerMode: 'disabled',
+    generateStatsFile: true,
+    statsOptions: { source: false }
+  })
+);
 if(process.env.mode === "development") {
-  webpack_config.plugins.push(
-    new BundleAnalyzerPlugin({
-      analyzerMode: 'disabled',
-      generateStatsFile: true,
-      statsOptions: { source: false }
-    })
-  );
   webpack_config["devtool"] = 'eval-source-map';
 }
 
