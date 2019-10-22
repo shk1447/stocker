@@ -275,7 +275,7 @@ common.view = (function() {
             var text_node = node.append('svg:text').attr('y', node_size+12).style('stroke', 'none').style("text-anchor", "middle").text(d.name);
 
             d.update = function() {
-                if(d.swing && d.detail) {
+                if(d.detail) {
                     var description = d.name+'('+moment(d.unixtime).format("YYYY-MM-DD") +') ' + d.price +'원 '+ 
                     '/ '+ d.flow_state+ '(' + moment(d.flow_date).format('YYYY-MM-DD')+ ")"+" / resist_date ("+ d.resist_date +
                     ') / 예상수익률(' + d.yield_date + '): '+ Math.round(d.yield)+ '%('+d.yield_price +'원) / 매수구간 : '+ Math.round(d.loss_price)+"~"+Math.round(d.start_price)+ "원 / 최저가 : "+ d.lowest_price+ "원";

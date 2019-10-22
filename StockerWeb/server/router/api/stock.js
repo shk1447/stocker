@@ -225,8 +225,8 @@ module.exports = {
                     });
                     var response_arr = [];
                     _.each(sorted_arr, (v,k) => {
-                        if(v.flow_state && v.flow_state.includes("_up_") && parseInt(v.props["지지갯수"]) > parseInt(v.props["저항갯수"])) {
-                            console.log(parseInt(v.props["지지갯수"]) - parseInt(v.props["supports"]) >= parseInt(v.props["저항갯수"]))
+                        if(v.flow_state && v.flow_state.includes("_up_") && parseInt(v.props["지지갯수"]) >= parseInt(v.props["저항갯수"])) {
+                            console.log(parseInt(v.props["supports"]) <= parseInt(v.props["resists"]))
                             upup++;
                             var standard_price = v.flow_state.includes("resist") ? v.props.last_resist : v.loss_price;
                             console.log(v.name,'(',moment(v.unixtime).format("YYYY-MM-DD") ,') ' + v.price +'원 ', 
