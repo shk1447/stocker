@@ -9,9 +9,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@tensorflow/tfjs": "^1.2.5",
-    "@tensorflow/tfjs-node": "^1.2.5",
-    "@tensorflow/tfjs-node-gpu": "^1.2.5",
     "axios": "^0.18.0",
     "body-parser": "^1.18.3",
     "cheerio": "^1.0.0-rc.2",
@@ -36,7 +33,6 @@
     "moment": "^2.24.0",
     "mysql": "^2.16.0",
     "net": "^1.0.2",
-    "numjs": "^0.16.0",
     "os": "^0.1.1",
     "passport": "^0.4.0",
     "passport-google-oauth": "^2.0.0",
